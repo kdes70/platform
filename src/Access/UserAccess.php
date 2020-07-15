@@ -4,23 +4,27 @@ declare(strict_types=1);
 
 namespace Orchid\Access;
 
+use Exception;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
 use Orchid\Platform\Dashboard;
-use Orchid\Platform\Models\Role;
-use Illuminate\Database\Eloquent\Model;
 use Orchid\Platform\Events\AddRoleEvent;
 use Orchid\Platform\Events\RemoveRoleEvent;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Orchid\Platform\Models\Role;
 
 trait UserAccess
 {
+    use StatusAccess;
+
     /**
-     * @var null
+     * @var null|\Illuminate\Support\Collection
      */
     private $cachePermissions;
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getRoles()
     {
@@ -36,13 +40,13 @@ trait UserAccess
     }
 
     /**
-     * @param $role
+     * @param Role|int|string $role
      *
      * @return bool
      */
     public function inRole($role): bool
     {
-        $role = Arr::first($this->roles, function ($instance) use ($role) {
+        $role = Arr::first($this->roles, static function ($instance) use ($role) {
             if ($role instanceof RoleInterface) {
                 return $instance->getRoleId() === $role->getRoleId();
             }
@@ -57,28 +61,27 @@ trait UserAccess
     }
 
     /**
-     * @param      $checkPermissions
-     * @param bool $cache
+     * @param string $permit
+     * @param bool   $cache
      *
      * @return bool
      */
-    public function hasAccess($checkPermissions, $cache = true): bool
+    public function hasAccess(string $permit, bool $cache = true): bool
     {
         if (! $cache || is_null($this->cachePermissions)) {
             $this->cachePermissions = $this->roles()
                 ->pluck('permissions')
-                ->prepend($this->permissions);
+                ->prepend($this->permissions)
+                ->filter(function ($permission) {
+                    return is_array($permission);
+                });
         }
 
-        $permissions = $this->cachePermissions;
-
-        foreach ($permissions as $permission) {
-            if (isset($permission[$checkPermissions]) && $permission[$checkPermissions]) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->cachePermissions
+            ->filter(function (array $permissions) use ($permit) {
+                return isset($permissions[$permit]) && $permissions[$permit];
+            })
+            ->isNotEmpty();
     }
 
     /**
@@ -98,11 +101,11 @@ trait UserAccess
     /**
      * Remove Role Slug.
      *
-     * @param $slug
+     * @param string $slug
      *
      * @return int
      */
-    public function removeRoleBySlug($slug): int
+    public function removeRoleBySlug(string $slug): int
     {
         $role = $this->roles()->where('slug', $slug)->first();
 
@@ -128,7 +131,7 @@ trait UserAccess
      *
      * @return $this
      */
-    public function replaceRoles($roles)
+    public function replaceRoles(?array $roles = [])
     {
         $this->roles()->detach();
 
@@ -142,7 +145,7 @@ trait UserAccess
     }
 
     /**
-     * @param $roles
+     * @param Model|RoleInterface|RoleInterface[] $roles
      */
     public function eventAddRole($roles)
     {
@@ -150,7 +153,7 @@ trait UserAccess
     }
 
     /**
-     * @param $roles
+     * @param Model|RoleInterface|RoleInterface[] $roles
      */
     public function eventRemoveRole($roles)
     {
@@ -158,7 +161,7 @@ trait UserAccess
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      *
      * @return bool
      */

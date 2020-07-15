@@ -14,7 +14,17 @@ abstract class Columns extends Base
     /**
      * @var string
      */
-    public $template = 'platform::container.layouts.columns';
+    protected $template = 'platform::layouts.columns';
+
+    /**
+     * Base constructor.
+     *
+     * @param Base[] $layouts
+     */
+    public function __construct(array $layouts = [])
+    {
+        $this->layouts = $layouts;
+    }
 
     /**
      * @param Repository $repository

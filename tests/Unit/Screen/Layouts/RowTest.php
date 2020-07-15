@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Orchid\Tests\Unit\Screen\Layouts;
 
+use Orchid\Screen\Fields\Input;
 use Orchid\Screen\Layout;
+use Orchid\Screen\Layouts\Rows;
 use Orchid\Screen\Repository;
 use Orchid\Tests\TestUnitCase;
-use Orchid\Screen\Fields\Input;
 
 class RowTest extends TestUnitCase
 {
@@ -26,17 +27,32 @@ class RowTest extends TestUnitCase
         $this->assertStringContainsString('Alexandr Chernyaev', $html);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function testWith()
+    public function testTitleForShortRow()
     {
-        $layout = Layout::rows([
-            Input::make('name'),
-        ])->with(10);
+        $layout = Layout::rows([])->title('Profile');
 
-        $html = $layout->build(new Repository())->withErrors([])->render();
+        $html = $layout->build(new Repository())
+            ->withErrors([])
+            ->render();
 
-        $this->assertStringContainsString('10%', $html);
+        $this->assertStringContainsString('Profile', $html);
+    }
+
+    public function testTitleForRow()
+    {
+        $rows = new class extends Rows {
+            protected $title = 'Profile';
+
+            protected function fields(): array
+            {
+                return [];
+            }
+        };
+
+        $html = $rows->build(new Repository())
+            ->withErrors([])
+            ->render();
+
+        $this->assertStringContainsString('Profile', $html);
     }
 }

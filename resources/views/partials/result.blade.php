@@ -1,32 +1,45 @@
-@forelse($results as $group)
+@section('search', $query)
 
-    @empty(!$group['label'])
-        <div class="hidden-folded padder m-t-xs m-b-xs text-muted text-xs">{{$group['label']}}</div>
-    @endempty
+@empty(!$radios)
+    <div class="row border-bottom v-center pl-3 pr-4">
+        {!! $radios !!}
+    </div>
+@endempty
 
-    @foreach($group['result'] as $item)
-        <a href="{{$item->url}}" class="block wrapper-sm dropdown-item">
+<div class="row">
+    @forelse($results as $item)
 
-            @empty(!$item->avatar)
-                <span class="pull-left thumb-xs avatar m-r-sm">
-                  <img src="{{$item->avatar}}" alt="{{$item->title}}">
-                  {{-- <i class="on b-white bottom"></i> --}}
+        <a href="{{$item->url()}}" class="block wrapper-sm dropdown-item" style="font-size: 0.85em;">
+
+            @empty(!$item->image())
+                <span class="pull-left thumb-xs rounded m-r-sm">
+                  <img src="{{$item->image()}}" alt="{{$item->title()}}">
                 </span>
             @endempty
 
             <span class="clear">
-                <span class="text-ellipsis">{{$item->title}}</span>
+                <span class="text-ellipsis">{{$item->title()}}</span>
                 <small class="text-muted clear text-ellipsis">
-                    {{$item->subTitle}}
+                    {{$item->subTitle()}}
                 </small>
             </span>
         </a>
-    @endforeach
-
     @empty
 
-        <p class="ml-3 mr-3 mb-0 text-center">
-            {{ __('There are no records in this view.') }}
-        </p>
+        <div class="text-center bg-white pt-5 pb-5 w-100">
+            <h3 class="font-thin">
+                <i class="icon-magnifier-remove block m-b"></i>
+                {{ __('Nothing found.') }}
+            </h3>
 
-@endforelse
+            {{ __('Try changing the query or type.') }}
+        </div>
+    @endforelse
+
+    @includeWhen($results instanceof \Illuminate\Contracts\Pagination\Paginator && $results->isNotEmpty(),
+        'platform::layouts.pagination',
+        ['paginator' => $results]
+      )
+
+</div>
+

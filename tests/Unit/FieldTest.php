@@ -4,24 +4,25 @@ declare(strict_types=1);
 
 namespace Orchid\Tests\Unit;
 
-use Orchid\Screen\Fields\Map;
-use Orchid\Screen\Fields\UTM;
-use Orchid\Tests\TestUnitCase;
-use Orchid\Screen\Fields\Input;
-use Orchid\Screen\Fields\Select;
-use Orchid\Screen\Fields\Upload;
-use Orchid\Screen\Fields\Picture;
-use Orchid\Screen\Fields\TinyMCE;
-use Orchid\Screen\Fields\CheckBox;
-use Orchid\Screen\Fields\Password;
-use Orchid\Screen\Fields\Switcher;
-use Orchid\Screen\Fields\TextArea;
 use Illuminate\Contracts\View\View;
+use Orchid\Screen\Field;
+use Orchid\Screen\Fields\CheckBox;
+use Orchid\Screen\Fields\Cropper;
 use Orchid\Screen\Fields\DateRange;
 use Orchid\Screen\Fields\DateTimer;
-use Orchid\Screen\Fields\SimpleMDE;
+use Orchid\Screen\Fields\Input;
+use Orchid\Screen\Fields\Map;
+use Orchid\Screen\Fields\Password;
+use Orchid\Screen\Fields\Picture;
 use Orchid\Screen\Fields\RadioButtons;
-use Orchid\Screen\Fields\Relationship;
+use Orchid\Screen\Fields\Select;
+use Orchid\Screen\Fields\SimpleMDE;
+use Orchid\Screen\Fields\Switcher;
+use Orchid\Screen\Fields\TextArea;
+use Orchid\Screen\Fields\TinyMCE;
+use Orchid\Screen\Fields\Upload;
+use Orchid\Screen\Fields\UTM;
+use Orchid\Tests\TestUnitCase;
 
 /**
  * Class FieldTest.
@@ -29,81 +30,77 @@ use Orchid\Screen\Fields\Relationship;
 class FieldTest extends TestUnitCase
 {
     /**
-     * @return array
+     * @return \Generator
      */
     public function exampleFields()
     {
-        return [
-            [TextArea::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [Input::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [Select::class,
-             [
-                 'name'    => 'example',
-                 'options' => [],
-             ], ],
-            [RadioButtons::class,
-             [
-                 'name'    => 'example',
-                 'options' => ['value' => 'example'],
-             ], ],
-            [Relationship::class,
-             [
-                 'name'    => 'example',
-                 'handler' => 'handler',
-             ], ],
-            [Map::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [Picture::class,
-             [
-                 'name'   => 'example',
-                 'width'  => '100',
-                 'height' => '100',
-             ], ],
-            [DateTimer::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [CheckBox::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [TinyMCE::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [Password::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [SimpleMDE::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [Upload::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [UTM::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [DateRange::class,
-             [
-                 'name' => 'example',
-             ], ],
-            [Switcher::class,
-             [
-                 'name' => 'example',
-             ], ],
-        ];
+        yield [Input::class, [
+            'name' => 'example',
+        ]];
+
+        yield [TextArea::class, [
+            'name' => 'example',
+        ]];
+
+        yield [Select::class, [
+            'name'    => 'example',
+            'options' => [],
+        ]];
+
+        yield [RadioButtons::class, [
+            'name'    => 'example',
+            'options' => ['value' => 'example'],
+        ]];
+
+        yield [Map::class, [
+            'name' => 'example',
+        ]];
+
+        yield [Cropper::class, [
+            'name'   => 'example',
+            'width'  => '100',
+            'height' => '100',
+        ]];
+
+        yield [DateTimer::class, [
+            'name' => 'example',
+        ]];
+
+        yield [CheckBox::class, [
+            'name' => 'example',
+        ]];
+
+        yield [TinyMCE::class, [
+            'name' => 'example',
+        ]];
+
+        yield [SimpleMDE::class, [
+            'name' => 'example',
+        ]];
+
+        yield [Upload::class, [
+            'name' => 'example',
+        ]];
+
+        yield [Password::class, [
+            'name' => 'example',
+        ]];
+
+        yield [UTM::class, [
+            'name' => 'example',
+        ]];
+
+        yield [DateRange::class, [
+            'name' => 'example',
+        ]];
+
+        yield [Switcher::class, [
+            'name' => 'example',
+        ]];
+
+        yield [Picture::class, [
+            'name' => 'example',
+        ]];
     }
 
     /**
@@ -117,7 +114,7 @@ class FieldTest extends TestUnitCase
     public function testHasCorrectInstance(string $field, $options)
     {
         /** @var \Orchid\Screen\Field $field */
-        $field = new $field();
+        $field = $field::make();
 
         foreach ($options as $key => $option) {
             $field->set($key, $option);
@@ -127,5 +124,21 @@ class FieldTest extends TestUnitCase
 
         $this->assertInstanceOf(View::class, $view);
         $this->assertStringContainsString('example', $view->withErrors([])->render());
+    }
+
+    public function testUniqueId()
+    {
+        $collect = collect(range(0, 10000));
+
+        $fields = $collect->map(function ($value) {
+            return (new Field())->set('value', $value)->getId();
+        })->unique();
+
+        $this->assertEquals($fields->count(), $collect->count());
+
+        $expected = (new Field())->set('value', 'test')->getId();
+        $actual = (new Field())->set('value', 'test')->getId();
+
+        $this->assertEquals($expected, $actual);
     }
 }

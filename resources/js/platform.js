@@ -9,51 +9,50 @@ export default function platform() {
         prefix(path) {
             let prefix = document.head.querySelector('meta[name="dashboard-prefix"]');
 
-            if (prefix.content.charAt(0) !== '/') {
-                prefix = `/${prefix.content}`;
-            }
+            // Remove double slashes from url
+            let pathname = `${prefix.content}${path}`.replace(/\/\/+/g, '/')
 
-            return `${location.protocol}//${location.hostname}${location.port ? `:${location.port}` : ''}${prefix.content}${path}`;
+            return `${location.protocol}//${location.hostname}${location.port ? `:${location.port}` : ''}${pathname}`;
         },
 
         /**
          *
+         * @param title
          * @param message
          * @param type
-         * @param target
          */
-        alert(message, type = 'danger', target = '#dashboard-alerts') {
-            $(target).append(
-                $('<div/>', {
-                    class: `alert alert-${type}`,
-                    text: message,
-                }).append(
-                    $('<button/>', {
-                        class: 'close',
-                        'data-dismiss': 'alert',
-                        'aria-label': 'Close',
-                        'aria-hidden': 'true',
-                    }).append($('<span/>', {
-                        'aria-hidden': 'true',
-                        html: '&times;',
-                    })),
-                ),
-                $('<div/>', { class: 'clearfix' }),
-            );
+        alert(title, message, type = 'warning') {
+          let toastWrapper = document.querySelector('[data-controller="layouts--toast"]');
+          let toastController = application.getControllerForElementAndIdentifier(toastWrapper, 'layouts--toast');
+          toastController.alert(title, message, type);
         },
 
         /**
          *
-         * @param idForm
-         * @param message
-         * @returns {boolean}
+         * @param elem
          */
-        validateForm(idForm, message) {
-            if (!document.getElementById(idForm).checkValidity()) {
-                window.platform.alert(message, 'warning');
-                return false;
-            }
-            return true;
+        formToObject(elem) {
+            let output = {};
+
+            new FormData(elem).forEach((value, key) => {
+
+                    if(!Object.prototype.hasOwnProperty.call(output, key)){
+                        output[key] = value;
+                        return;
+                    }
+
+                    let current = output[key];
+
+                    if (!Array.isArray(current)) {
+                        current = output[key] = [current];
+                    }
+
+                    current.push(value);
+                }
+            );
+
+            return output;
         },
+
     };
 }

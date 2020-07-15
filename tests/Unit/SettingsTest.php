@@ -8,6 +8,11 @@ use Illuminate\Support\Str;
 use Orchid\Setting\Setting;
 use Orchid\Tests\TestUnitCase;
 
+/**
+ * Class SettingsTest.
+ *
+ * @deprecated
+ */
 class SettingsTest extends TestUnitCase
 {
     /**
@@ -69,6 +74,41 @@ class SettingsTest extends TestUnitCase
         $this->assertEquals(3, $result);
     }
 
+    public function testForRewriteCache()
+    {
+        $this->setting->set('cache-key', 'old');
+        $this->setting->get('cache-key');
+
+        $this->setting->set('cache-key', 'new');
+        $this->assertStringContainsString('new', $this->setting->get('cache-key'));
+    }
+
+    /**
+     * @dataProvider notExitstValues
+     *
+     * @param $defaultValue
+     */
+    public function testDefaultValue($defaultValue)
+    {
+        $value = $this->setting->get('nonexistent value', $defaultValue);
+
+        $this->assertEquals(gettype($defaultValue), gettype($value));
+        $this->assertEquals($defaultValue, $value);
+    }
+
+    /**
+     * @return array
+     */
+    public function notExitstValues(): array
+    {
+        return [
+            ['string'],
+            [123],
+            [new \stdClass()],
+            [['test', 123]],
+        ];
+    }
+
     public function testUseHelper()
     {
         $this->setting->set('helper', 'run');
@@ -78,7 +118,7 @@ class SettingsTest extends TestUnitCase
         $this->assertEquals('default', setting('not-found', 'default'));
     }
 
-    protected function setUp() : void
+    protected function setUp(): void
     {
         parent::setUp();
         $setting = new Setting();

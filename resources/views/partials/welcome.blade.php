@@ -1,163 +1,91 @@
-<div class="row admin-wrapper b-t">
-    <div class="wrapper-lg">
-        <div class="row m-b-xl text-center">
-            <div class="wrapper w-full">
-                <h1 class="text-dark font-thin m-t-md m-b-sm"><i class="icon-directions m-r-xs"></i> Get Started</h1>
-                <p class="lead m-b-n">Make it short and sweet, but not too short so folks don't simply skip over it
-                                      entirely.</p>
-            </div>
-        </div>
+<div class="admin-wrapper">
+    <div class="py-4">
+
         <div class="row">
-            <div class="col-md-4 no-padder admin-element-item">
+            <div class="col-md-7 col-sm-12">
+                <div class="mb-5 jumbotron">
+                    <h1 class="display-5 text-dark font-thin m-b-sm">
+                        <i class="icon-trophy mr-2 mb-3"></i> Congratulations!
 
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-screen-desktop"></i> Screens
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-equalizer"></i> Configuration
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-settings"></i> Settings
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
-                </div>
+                        <span
+                            class="badge badge-success small v-top bg-primary text-white">{{\Orchid\Platform\Dashboard::VERSION}}</span>
+                    </h1>
+                    <p class="lead">You have successfully installed the platform, let's get started</p>
 
+                    <p>
+                        The installation includes examples of pages and the use of fields, layers and tables, and more
+                        on them.
+                    </p>
+
+                    <p>
+                        <strong> Why not explore them?</strong>
+                    </p>
+
+                    <div class="row">
+                        <div class="col-xs-12 col-md-6">
+                            <ul class="pl-4 m-0">
+                                @if(Route::has('platform.example'))
+                                    <li><a href="{{ route('platform.example') }}">Example screen</a></li>
+                                @endif
+                                @if(Route::has('platform.example.fields'))
+                                    <li><a href="{{ route('platform.example.fields') }}">Basic form controls</a></li>
+                                @endif
+                                @if(Route::has('platform.example.advanced'))
+                                    <li><a href="{{ route('platform.example.advanced') }}">Advanced form controls</a>
+                                    </li>
+                                @endif
+                                @if(Route::has('platform.example.editors'))
+                                    <li><a href="{{ route('platform.example.editors') }}">Form Text Editors</a></li>
+                                @endif
+                            </ul>
+                        </div>
+                        <div class="col-xs-12 col-md-6">
+                            <ul class="pl-4 m-0">
+                                @if(Route::has('platform.example.layouts'))
+                                    <li><a href="{{ route('platform.example.layouts') }}">Overview layouts</a></li>
+                                @endif
+                                @if(Route::has('platform.example.charts'))
+                                    <li><a href="{{ route('platform.example.charts') }}">Charts</a></li>
+                                @endif
+                                @if(Route::has('platform.example.cards'))
+                                    <li><a href="{{ route('platform.example.cards') }}">Cards</a>
+                                    </li>
+                                @endif
+                                @if(Route::has('platform.systems.roles') && Route::has('platform.systems.roles'))
+                                        <li><a href="{{ route('platform.systems.users') }}">Users</a> and <a href="{{ route('platform.systems.roles') }}"> roles</a></li>
+                                @endif
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-            <div class="col-md-4 no-padder admin-element-item">
-
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-layers"></i> Layouts
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
+            <div class="col-md-5 col-sm-12 pr-md-5 mt-md-3">
+                <div class="mb-5">
+                    <h2 class="display-5 text-dark font-thin m-b-sm">
+                        <i class="icon-rocket mr-2 mb-3"></i>
+                        Quick start
+                    </h2>
+                    <div class="line line-dashed border-bottom mt-3 mb-3"></div>
+                    <p>For a quick study of the main features, step-by-step tutorials are prepared, which you can
+                        <a href="https://orchid.software/en/docs/quickstart" target="_blank"> see on the site</a>.</p>
                 </div>
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-grid"></i> Widgets
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
+                <div class="mb-5">
+                    <h2 class="display-5 text-dark font-thin m-b-sm">
+                        <i class="icon-help mr-2 mb-3"></i>
+                        Community
+                    </h2>
+                    <div class="line line-dashed border-bottom mt-3 mb-3"></div>
+                    <p>Stay up to date on the development of "Orchid Platform" and reach out to the community with these
+                        helpful
+                        resources.</p>
+                    <ul>
+                        <li>Follow <a href="https://twitter.com/orchid_platform">@orchid_platform on Twitter</a>.</li>
+                        <li>Join <a href="https://t.me/orchid_community">the official Telegram group</a>.</li>
+                    </ul>
                 </div>
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-fingerprint"></i> Access
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div class="col-md-4 no-padder admin-element-item">
-
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-list"></i> Fields
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <a href="http://localhost:8000/dashboard/press/menu" class="d-block">
-                                <small class="text-muted">Something short and leading about the collection below—its
-                                                          contents, the creator, etc.
-                                                          Make it short and sweet, but not too short so folks don't
-                                                          simply skip over it entirely.
-                                </small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-filter"></i> Filters
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="admin-element w-full">
-                    <h3 class="font-thin h3 text-black">
-                        <i class="icon-docs"></i> Entity
-                    </h3>
-                    <div class="line line-dashed b-b line-lg"></div>
-                    <div class="list-group no-bg no-borders pull-in auto">
-                        <div class="list-group-item padder-v admin-element-item">
-                            <small class="text-muted">Something short and leading about the collection below—its
-                                                      contents, the creator, etc.
-                                                      Make it short and sweet, but not too short so folks don't
-                                                      simply skip over it entirely.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
-    </div>
 
+    </div>
 </div>

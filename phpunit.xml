@@ -9,17 +9,17 @@
          processIsolation="false"
          stopOnFailure="false"
          stopOnError="false"
+         defaultTestSuite="Main"
          verbose="true"
 >
     <testsuites>
-        <testsuite name="Console">
-            <directory suffix="Test.php">./tests/Console</directory>
-        </testsuite>
-        <testsuite name="Feature">
+        <testsuite name="Main">
             <directory suffix="Test.php">./tests/Feature</directory>
-        </testsuite>
-        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Console</directory>
             <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Browser">
+            <directory suffix="Test.php">./tests/Browser</directory>
         </testsuite>
     </testsuites>
     <filter>
@@ -36,12 +36,14 @@
         <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
         <env name="APP_DEBUG" value="true"/>
         <env name="APP_URL" value="http://127.0.0.1:8000"/>
-        <env name="DASHBOARD_DOMAIN" value="localhost"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="DASHBOARD_DOMAIN" value="127.0.0.1"/>
         <env name="DASHBOARD_PREFIX" value="/dashboard"/>
         <env name="CACHE_DRIVER" value="file"/>
         <env name="SESSION_DRIVER" value="file"/>
         <env name="SESSION_LIFETIME" value="120"/>
-        <env name="SCOUT_DRIVER" value="null"/>
+        <env name="SCOUT_DRIVER" value="array"/>
+        <env name="SCOUT_QUEUE" value="true"/>
         <env name="QUEUE_DRIVER" value="sync"/>
     </php>
     <logging>

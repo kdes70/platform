@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Providers;
 
-use Orchid\Platform\Dashboard;
-use Orchid\Platform\ItemPermission;
+use App\Orchid\PlatformProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Orchid\Platform\Http\Composers\SystemMenuComposer;
-use Orchid\Platform\Http\Composers\AnnouncementsComposer;
+use Orchid\Platform\Dashboard;
+use Orchid\Platform\Http\Composers\LockMeComposer;
 use Orchid\Platform\Http\Composers\NotificationsComposer;
+use Orchid\Platform\ItemPermission;
 
 class PlatformServiceProvider extends ServiceProvider
 {
@@ -28,16 +28,17 @@ class PlatformServiceProvider extends ServiceProvider
     {
         $this->dashboard = $dashboard;
 
-        View::composer('platform::container.systems.index', SystemMenuComposer::class);
-        View::composer('platform::partials.notifications', NotificationsComposer::class);
-        View::composer('platform::partials.announcement', AnnouncementsComposer::class);
+        View::composer('platform::auth.login', LockMeComposer::class);
+        View::composer('platform::partials.notificationProfile', NotificationsComposer::class);
 
-        $this->dashboard
-            ->registerResource('stylesheets', config('platform.resource.stylesheets', null))
-            ->registerResource('scripts', config('platform.resource.scripts', null))
-            ->registerPermissions($this->registerPermissionsMain())
-            ->registerPermissions($this->registerPermissionsSystems())
-            ->addPublicDirectory('orchid', PLATFORM_PATH.'/public/');
+        $this->app->booted(function () {
+            $this->dashboard
+                ->registerResource('stylesheets', config('platform.resource.stylesheets', null))
+                ->registerResource('scripts', config('platform.resource.scripts', null))
+                ->registerPermissions($this->registerPermissionsMain())
+                ->registerPermissions($this->registerPermissionsSystems())
+                ->addPublicDirectory('orchid', Dashboard::path('public/'));
+        });
     }
 
     /**
@@ -47,8 +48,7 @@ class PlatformServiceProvider extends ServiceProvider
     {
         return ItemPermission::group(__('Main'))
             ->addPermission('platform.index', __('Main'))
-            ->addPermission('platform.systems', __('Systems'))
-            ->addPermission('platform.systems.index', __('Settings'));
+            ->addPermission('platform.systems.index', __('Systems'));
     }
 
     /**
@@ -57,8 +57,7 @@ class PlatformServiceProvider extends ServiceProvider
     protected function registerPermissionsSystems(): ItemPermission
     {
         return ItemPermission::group(__('Systems'))
-            ->addPermission('platform.systems.attachment', __('Attachment'))
-            ->addPermission('platform.systems.announcement', __('Announcement'));
+            ->addPermission('platform.systems.attachment', __('Attachment'));
     }
 
     /**
@@ -66,8 +65,8 @@ class PlatformServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        if (class_exists(\App\Orchid\PlatformProvider::class)) {
-            $this->app->register(\App\Orchid\PlatformProvider::class);
+        if (class_exists(PlatformProvider::class)) {
+            $this->app->register(PlatformProvider::class);
         }
     }
 }

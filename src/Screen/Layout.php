@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Orchid\Screen;
 
+use Illuminate\Support\Traits\Macroable;
+use Orchid\Screen\Layouts\Accordion;
+use Orchid\Screen\Layouts\Blank;
+use Orchid\Screen\Layouts\Collapse;
+use Orchid\Screen\Layouts\Columns;
+use Orchid\Screen\Layouts\Component;
+use Orchid\Screen\Layouts\Modal;
 use Orchid\Screen\Layouts\Rows;
+use Orchid\Screen\Layouts\Rubbers;
+use Orchid\Screen\Layouts\Table;
 use Orchid\Screen\Layouts\Tabs;
 use Orchid\Screen\Layouts\View;
-use Orchid\Screen\Layouts\Blank;
-use Orchid\Screen\Layouts\Modals;
-use Orchid\Screen\Layouts\Columns;
 use Orchid\Screen\Layouts\Wrapper;
-use Orchid\Screen\Layouts\Collapse;
-use Orchid\Screen\Layouts\Accordion;
-use Illuminate\Support\Traits\Macroable;
 
 /**
  * Class Layout.
@@ -23,18 +26,25 @@ class Layout
     use Macroable;
 
     /**
-     * @var array
-     */
-    public $layouts = [];
-
-    /**
-     * @param string $view
+     * @param string                                        $view
+     * @param \Illuminate\Contracts\Support\Arrayable|array $data
      *
      * @return View
      */
-    public static function view(string $view): View
+    public static function view(string $view, $data = []): View
     {
-        return new class($view) extends View {
+        return new class($view, $data) extends View {
+        };
+    }
+
+    /**
+     * @param string $component
+     *
+     * @return Component
+     */
+    public static function component(string $component): Component
+    {
+        return new class($component) extends Component {
         };
     }
 
@@ -47,16 +57,16 @@ class Layout
     {
         return new class($fields) extends Rows {
             /**
-             * @var array
+             * @var Field[]
              */
-            private $fields;
+            protected $fields;
 
             /**
              *  constructor.
              *
              * @param array $fields
              */
-            public function __construct(array $fields)
+            public function __construct(array $fields = [])
             {
                 $this->fields = $fields;
             }
@@ -67,6 +77,35 @@ class Layout
             public function fields(): array
             {
                 return $this->fields;
+            }
+        };
+    }
+
+    /**
+     * @param string $target
+     * @param array  $columns
+     *
+     * @return Table
+     */
+    public static function table(string $target, array $columns): Table
+    {
+        return new class($target, $columns) extends Table {
+            /**
+             * @param string $target
+             * @param array  $columns
+             */
+            public function __construct(string $target, array $columns)
+            {
+                $this->target = $target;
+                $this->columns = $columns;
+            }
+
+            /**
+             * @return array
+             */
+            public function columns(): array
+            {
+                return $this->columns;
             }
         };
     }
@@ -94,13 +133,14 @@ class Layout
     }
 
     /**
-     * @param array $layouts
+     * @param string $key
+     * @param array  $layouts
      *
-     * @return Modals
+     * @return Modal
      */
-    public static function modals(array $layouts): Modals
+    public static function modal(string $key, array $layouts): Modal
     {
-        return new class($layouts) extends Modals {
+        return new class($key, $layouts) extends Modal {
         };
     }
 
@@ -124,26 +164,11 @@ class Layout
     {
         return new class($fields) extends Collapse {
             /**
-             * @var array
-             */
-            private $fields;
-
-            /**
-             *  constructor.
-             *
-             * @param array $fields
-             */
-            public function __construct(array $fields)
-            {
-                $this->fields = $fields;
-            }
-
-            /**
              * @return array
              */
             public function fields(): array
             {
-                return $this->fields;
+                return $this->layouts;
             }
         };
     }
@@ -168,6 +193,17 @@ class Layout
     public static function accordion(array $layouts): Accordion
     {
         return new class($layouts) extends Accordion {
+        };
+    }
+
+    /**
+     * @param array $layouts
+     *
+     * @return Rubbers
+     */
+    public static function rubbers(array $layouts): Rubbers
+    {
+        return new class($layouts) extends Rubbers {
         };
     }
 }

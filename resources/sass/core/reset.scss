@@ -37,9 +37,11 @@ a:focus {
 }
 
 label {
-  font-weight: normal;
-  font-size: 12px;
-  word-break: normal;
+    color: lighten($black, 20%);
+    font-weight: normal;
+    font-size: 13px;
+    word-break: normal;
+    white-space: nowrap;
 }
 
 small, .small {
@@ -63,6 +65,14 @@ small, .small {
     padding: 3px 6px;
     margin-left: -10px;
   }
+
+  .icon-circle{
+      @extend .icon-circle;
+      font-size: 0.5em;
+      line-height: 0;
+      vertical-align: middle;
+  }
+
 }
 
 .badge-sm {
@@ -288,46 +298,23 @@ blockquote {
   > .badge {
     margin-right: 0;
   }
-  > .fa-chevron-right {
-    float: right;
-    margin-top: 4px;
-    margin-right: -5px;
-    & + .badge {
-      margin-right: 5px;
-    }
-  }
-}
-
-.nav-pills {
-  &.no-radius {
-    > li {
-      > a {
-        border-radius: 0;
-      }
-    }
-  }
-  > li {
-    &.active {
-      > a {
-        color: #fff !important;
-        background-color: $brand-info;
-        &:hover,
-        &:active {
-          background-color: darken($brand-info, 5%);
-        }
-      }
-    }
-  }
 }
 
 .nav {
   .nav-item {
-    .nav-link {
-      &:hover,
-      &:focus {
-        border-radius: unset;
+      align-items: center;
+      display: flex;
+      flex-direction: row;
+      text-overflow: ellipsis;
+
+      .nav-link {
+          width: 100%;
+
+          &:hover,
+          &:focus {
+              border-radius: unset;
+          }
       }
-    }
   }
   &.nav-lg {
     .nav-item .nav-link {
@@ -395,6 +382,7 @@ blockquote {
         background: transparent !important;
 		&.active {
 			border-bottom-color: $brand-primary !important;
+            cursor: default;
 		}
       }
       &.active {
@@ -418,6 +406,7 @@ blockquote {
 }
 
 .pagination {
+  margin: 0;
   > li, .page-item {
     > a, .page-link {
       border: none;
@@ -428,7 +417,7 @@ blockquote {
         text-decoration: underline;
         box-shadow: none;
       }
-	}  
+	}
 	&.active{
 		.page-link, span {
 			&,
@@ -440,15 +429,13 @@ blockquote {
 				cursor: default;
                 @extend .text-muted;
             }
-		
-		
 		}
 	}
-		
-	
+
+
   }
-  
-  
+
+
   @at-root .text-right & {
     -webkit-box-pack: end!important;
     -ms-flex-pack: end!important;
@@ -459,6 +446,7 @@ blockquote {
 .panel,
 .card {
   border-radius: $border-radius-base;
+  border-color: $border-color;
   .accordion-toggle {
     font-size: 14px;
     display: block;
@@ -725,21 +713,26 @@ blockquote {
 }
 
 .dropdown-item {
-  @include hover-focus {
-    color: $dropdown-link-hover-color;
-    @include gradient-bg($dropdown-link-hover-bg);
-  }
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    text-overflow: ellipsis;
 
-  &.active,
-  &:active {
-    color: $dropdown-link-hover-color;
-    @include gradient-bg($dropdown-link-hover-bg);
-  }
+    @include hover-focus {
+        color: $dropdown-link-hover-color;
+        @include gradient-bg($dropdown-link-hover-bg);
+    }
 
-  &.disabled,
-  &:disabled {
-    color: $dropdown-link-disabled-color;
-  }
+    &.active,
+    &:active {
+        color: $dropdown-link-hover-color;
+        @include gradient-bg($dropdown-link-hover-bg);
+    }
+
+    &.disabled,
+    &:disabled {
+        color: $dropdown-link-disabled-color;
+    }
 }
 
 .breadcrumb {
@@ -747,11 +740,53 @@ blockquote {
 }
 
 .sub-menu {
-  transition: all .4s ease-in-out 0s;
-  .dropdown-item{
-    padding: .5rem 2.5rem;
-  }
-  .dropdown-item:hover, .dropdown-item:focus {
-    background-color: inherit;
-  }
+    width: 100%;
+
+    transition: all .4s ease-in-out 0s;
+
+    .dropdown-item {
+        padding: .5rem 2.5rem;
+    }
+
+    .dropdown-item:hover, .dropdown-item:focus {
+        background-color: inherit;
+    }
+}
+
+dl {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: $border-color;
+    margin: 0.15em 0;
+    padding: 0;
+    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAABCAAAAAA+i0toAAAAAnRSTlMA/1uRIrUAAAAMSURBVHheY7j1/z8ABY8C2UtBe8oAAAAASUVORK5CYII=) 0 80% repeat-x;
+
+    dt, dd {
+        margin: 0;
+        background-color: $brand-white;
+    }
+
+    dt {
+        padding-right: 1em;
+    }
+
+    dd {
+        padding-left: 1em;
+    }
+}
+
+.card-text {
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+}
+
+sub, sup {
+    font-size: 80%;
+}
+
+legend {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
 }

@@ -4,21 +4,22 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Models;
 
+use App\Orchid\Presenters\UserPresenter;
 use Exception;
-use Orchid\Access\UserAccess;
-use Orchid\Filters\Filterable;
-use Orchid\Access\UserInterface;
-use Illuminate\Support\Facades\Hash;
-use Orchid\Support\Facades\Dashboard;
-use Illuminate\Notifications\Notifiable;
-use Orchid\Platform\Traits\MultiLanguageTrait;
-use Orchid\Platform\Notifications\ResetPassword;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Orchid\Platform\Notifications\DashboardNotification;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
+use Orchid\Access\UserAccess;
+use Orchid\Access\UserInterface;
+use Orchid\Filters\Filterable;
+use Orchid\Platform\Notifications\ResetPassword;
+use Orchid\Screen\AsSource;
+use Orchid\Support\Facades\Dashboard;
 
 class User extends Authenticatable implements UserInterface
 {
-    use Notifiable, UserAccess, MultiLanguageTrait, Filterable;
+    use Notifiable, UserAccess, AsSource, Filterable;
 
     /**
      * The database table used by the model.
@@ -28,6 +29,8 @@ class User extends Authenticatable implements UserInterface
     protected $table = 'users';
 
     /**
+     * The attributes that are mass assignable.
+     *
      * @var array
      */
     protected $fillable = [
@@ -46,17 +49,27 @@ class User extends Authenticatable implements UserInterface
     protected $hidden = [
         'password',
         'remember_token',
+        'permissions',
+        'uses_two_factor_auth',
+        'two_factor_secret_code',
+        'two_factor_recovery_code',
     ];
 
     /**
+     * The attributes that should be cast to native types.
+     *
      * @var array
      */
     protected $casts = [
-        'permissions'       => 'array',
-        'email_verified_at' => 'datetime',
+        'permissions'          => 'array',
+        'email_verified_at'    => 'datetime',
+        'last_login'           => 'datetime',
+        'uses_two_factor_auth' => 'boolean',
     ];
 
     /**
+     * The attributes for which you can use filters in url.
+     *
      * @var array
      */
     protected $allowedFilters = [
@@ -67,12 +80,17 @@ class User extends Authenticatable implements UserInterface
     ];
 
     /**
+     * The attributes for which can use sort in url.
+     *
      * @var array
      */
     protected $allowedSorts = [
         'id',
         'name',
         'email',
+        'last_login',
+        'updated_at',
+        'created_at',
     ];
 
     /**
@@ -88,91 +106,35 @@ class User extends Authenticatable implements UserInterface
     }
 
     /**
-     * Display name.
-     *
-     * @return string
-     */
-    public function getNameTitle() : string
-    {
-        return $this->name;
-    }
-
-    /**
-     * Display sub.
-     *
-     * @return string
-     */
-    public function getSubTitle() : string
-    {
-        return 'Administrator';
-    }
-
-    /**
      * @param string $name
      * @param string $email
      * @param string $password
      *
-     * @throws \Exception
+     * @throws \Throwable
      */
     public static function createAdmin(string $name, string $email, string $password)
     {
-        if (static::where('email', $email)->exists()) {
-            throw new Exception('User exist');
-        }
+        throw_if(static::where('email', $email)->exists(), Exception::class, 'User exist');
 
-        $permissions = collect();
-
-        Dashboard::getPermission()
+        $permissions = Dashboard::getPermission()
             ->collapse()
-            ->each(function ($item) use ($permissions) {
-                $permissions->put($item['slug'], true);
-            });
+            ->reduce(static function (Collection $permissions, array $item) {
+                return $permissions->put($item['slug'], true);
+            }, collect());
 
-        $user = static::create([
+        static::create([
             'name'        => $name,
             'email'       => $email,
             'password'    => Hash::make($password),
             'permissions' => $permissions,
         ]);
-
-        $user->notify(new DashboardNotification([
-            'title'   => "Welcome {$name}",
-            'message' => 'You can find the latest news of the project on the website',
-            'action'  => 'https://orchid.software/',
-            'type'    => DashboardNotification::INFO,
-        ]));
     }
 
     /**
-     * @throws \Exception
-     *
-     * @return string
+     * @return UserPresenter
      */
-    public function getAvatar()
+    public function presenter()
     {
-        $hash = md5(strtolower(trim($this->email)));
-
-        return "https://www.gravatar.com/avatar/$hash";
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getStatusPermission()
-    {
-        $permissions = $this->permissions ?? [];
-
-        return Dashboard::getPermission()
-            ->sort()
-            ->transform(function ($group) use ($permissions) {
-                $group = collect($group)->sortBy('description')->toArray();
-
-                foreach ($group as $key => $value) {
-                    $slug = $value['slug'];
-                    $group[$key]['active'] = array_key_exists($slug, $permissions) && (bool) $permissions[$slug];
-                }
-
-                return $group;
-            });
+        return new UserPresenter($this);
     }
 }

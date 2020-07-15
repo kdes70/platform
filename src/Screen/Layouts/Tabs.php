@@ -14,7 +14,17 @@ abstract class Tabs extends Base
     /**
      * @var string
      */
-    public $template = 'platform::container.layouts.tabs';
+    public $template = 'platform::layouts.tabs';
+
+    /**
+     * Base constructor.
+     *
+     * @param Base[] $layouts
+     */
+    public function __construct(array $layouts = [])
+    {
+        $this->layouts = $layouts;
+    }
 
     /**
      * @param Repository $repository

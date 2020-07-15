@@ -1,4 +1,4 @@
-let mix = require('laravel-mix');
+const mix = require('laravel-mix');
 
 /*
  |--------------------------------------------------------------------------
@@ -11,12 +11,25 @@ let mix = require('laravel-mix');
  |
  */
 
+/* Orchid mix config start */
+
 if (!mix.inProduction()) {
     mix
         .webpackConfig({
             devtool: 'source-map',
         })
         .sourceMaps();
+} else {
+    mix.options({
+        clearConsole: true,
+        terser: {
+            terserOptions: {
+                compress: {
+                    drop_console: true,
+                },
+            },
+        },
+    });
 }
 
 mix
@@ -25,24 +38,26 @@ mix
     .copyDirectory('./node_modules/tinymce/themes', 'public/js/tinymce/themes')
     .copyDirectory('./node_modules/tinymce/skins', 'public/js/tinymce/skins')
     .sass('resources/sass/app.scss', 'css/orchid.css', {
-        implementation: require('node-sass')
+        implementation: require('node-sass'),
     })
     .options({
-        processCssUrls: false
+        processCssUrls: false,
     })
     .js('resources/js/app.js', 'js/orchid.js')
     .extract([
         'stimulus', 'turbolinks', 'stimulus/webpack-helpers',
         'jquery', 'popper.js', 'bootstrap',
-        'dropzone', 'nestable', 'select2', 'cropperjs', 'frappe-charts', 'inputmask',
+        'dropzone', 'select2', 'cropperjs', 'frappe-charts', 'inputmask',
         'simplemde', 'tinymce', 'axios', 'leaflet', 'codeflask', 'stimulus-flatpickr',
-        'flatpickr', 'quill', 'codemirror', 'typo-js', 'sortablejs'
+        'flatpickr', 'quill', 'codemirror', 'typo-js', 'sortablejs',
     ])
     .autoload({
         jquery: [
             '$', 'window.jQuery', 'jQuery', 'jquery',
-            'bootstrap', 'nestable', 'select2'
+            'bootstrap', 'select2',
         ],
     })
     .setPublicPath('public')
     .version();
+
+/* Orchid mix config end */

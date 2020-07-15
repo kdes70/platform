@@ -9,49 +9,39 @@ use Orchid\Screen\Field;
 /**
  * Class CheckBox.
  *
- * @method self accept($value = true)
- * @method self accesskey($value = true)
- * @method self autocomplete($value = true)
- * @method self autofocus($value = true)
- * @method self checked($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self formaction($value = true)
- * @method self formenctype($value = true)
- * @method self formmethod($value = true)
- * @method self formnovalidate($value = true)
- * @method self formtarget($value = true)
- * @method self list($value = true)
- * @method self max(int $value)
- * @method self maxlength(int $value)
- * @method self min(int $value)
- * @method self multiple($value = true)
- * @method self name(string $value)
- * @method self pattern($value = true)
- * @method self placeholder(string $value = null)
- * @method self readonly($value = true)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self src($value = true)
- * @method self step($value = true)
- * @method self tabindex($value = true)
- * @method self value($value = true)
- * @method self help(string $value = null)
- * @method self sendTrueOrFalse($value = true)
+ * @method CheckBox accesskey($value = true)
+ * @method CheckBox autofocus($value = true)
+ * @method CheckBox checked($value = true)
+ * @method CheckBox disabled($value = true)
+ * @method CheckBox form($value = true)
+ * @method CheckBox formaction($value = true)
+ * @method CheckBox formenctype($value = true)
+ * @method CheckBox formmethod($value = true)
+ * @method CheckBox formnovalidate($value = true)
+ * @method CheckBox formtarget($value = true)
+ * @method CheckBox name(string $value = null)
+ * @method CheckBox placeholder(string $value = null)
+ * @method CheckBox readonly($value = true)
+ * @method CheckBox required(bool $value = true)
+ * @method CheckBox tabindex($value = true)
+ * @method CheckBox value($value = true)
+ * @method CheckBox help(string $value = null)
+ * @method CheckBox sendTrueOrFalse($value = true)
+ * @method CheckBox title(string $value = null)
  */
 class CheckBox extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.checkbox';
+    protected $view = 'platform::fields.checkbox';
 
     /**
      * Default attributes value.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'type'     => 'checkbox',
         'class'    => 'custom-control-input',
         'value'    => false,
@@ -64,10 +54,8 @@ class CheckBox extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
-        'accept',
+    protected $inlineAttributes = [
         'accesskey',
-        'autocomplete',
         'autofocus',
         'checked',
         'disabled',
@@ -77,19 +65,10 @@ class CheckBox extends Field
         'formmethod',
         'formnovalidate',
         'formtarget',
-        'list',
-        'max',
-        'maxlength',
-        'min',
-        'multiple',
         'name',
-        'pattern',
         'placeholder',
         'readonly',
         'required',
-        'size',
-        'src',
-        'step',
         'tabindex',
         'value',
         'type',

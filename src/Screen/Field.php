@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace Orchid\Screen;
 
+use Closure;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Support\Collection;
+use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
-use Orchid\Screen\Traits\CanSee;
-use Illuminate\Support\ViewErrorBag;
-use Orchid\Screen\Contracts\FieldContract;
+use Illuminate\View\View;
+use Orchid\Screen\Contracts\Fieldable;
 use Orchid\Screen\Exceptions\FieldRequiredAttributeException;
+use Orchid\Screen\Fields\Group;
+use Throwable;
 
 /**
  * Class Field.
  *
  * @method self accesskey($value = true)
- * @method self type($value = true)
  * @method self class($value = true)
- * @method self contenteditable($value = true)
- * @method self contextmenu($value = true)
  * @method self dir($value = true)
  * @method self hidden($value = true)
  * @method self id($value = true)
@@ -25,11 +27,9 @@ use Orchid\Screen\Exceptions\FieldRequiredAttributeException;
  * @method self spellcheck($value = true)
  * @method self style($value = true)
  * @method self tabindex($value = true)
- * @method self title(string $value = null)
- * @method self options($value = true)
  * @method self autocomplete($value = true)
  */
-class Field implements FieldContract
+class Field implements Fieldable
 {
     use CanSee;
 
@@ -37,7 +37,7 @@ class Field implements FieldContract
      * A set of closure functions
      * that must be executed before data is displayed.
      *
-     * @var \Closure[]
+     * @var Closure[]
      */
     private $beforeRender = [];
 
@@ -46,14 +46,14 @@ class Field implements FieldContract
      *
      * @var string
      */
-    public $view;
+    protected $view;
 
     /**
      * All attributes that are available to the field.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'value' => null,
     ];
 
@@ -62,7 +62,7 @@ class Field implements FieldContract
      *
      * @var array
      */
-    public $required = [
+    protected $required = [
         'name',
     ];
 
@@ -72,7 +72,7 @@ class Field implements FieldContract
      *
      * @var string|null
      */
-    public $typeForm;
+    protected $typeForm;
 
     /**
      * A set of attributes for the assignment
@@ -80,7 +80,7 @@ class Field implements FieldContract
      *
      * @var array
      */
-    public $translations = [
+    protected $translations = [
         'title',
         'placeholder',
         'help',
@@ -92,11 +92,9 @@ class Field implements FieldContract
      *
      * @var array
      */
-    public $universalAttributes = [
+    protected $universalAttributes = [
         'accesskey',
         'class',
-        'contenteditable',
-        'contextmenu',
         'dir',
         'hidden',
         'id',
@@ -114,48 +112,44 @@ class Field implements FieldContract
      *
      * @var array
      */
-    public $inlineAttributes = [];
+    protected $inlineAttributes = [];
 
     /**
      * @param string $name
      * @param array  $arguments
      *
-     * @return self
+     * @return static
      */
-    public function __call(string  $name, array $arguments): self
+    public function __call(string $name, array $arguments): self
     {
-        foreach ($arguments as $key => $argument) {
-            if ($argument instanceof \Closure) {
-                $arguments[$key] = $argument();
-            }
-        }
+        $arguments = collect($arguments)->map(static function ($argument) {
+            return $argument instanceof Closure ? $argument() : $argument;
+        });
 
         if (method_exists($this, $name)) {
             $this->$name($arguments);
         }
 
-        return $this->set($name, array_shift($arguments) ?? true);
+        return $this->set($name, $arguments->first() ?? true);
     }
 
     /**
      * @param mixed $value
      *
-     * @return self
+     * @return static
      */
     public function value($value): self
     {
-        $this->attributes['value'] = $value;
-
-        return $this;
+        return $this->set('value', $value);
     }
 
     /**
      * @param string $key
      * @param mixed  $value
      *
-     * @return self
+     * @return static
      */
-    public function set(string $key, $value = true) : self
+    public function set(string $key, $value = true): self
     {
         $this->attributes[$key] = $value;
 
@@ -163,95 +157,73 @@ class Field implements FieldContract
     }
 
     /**
-     * Obtain the list of required fields.
+     * @throws Throwable
      *
-     * @return array
+     * @return static
      */
-    public function getRequired(): array
+    protected function checkRequired(): self
     {
-        return $this->required;
-    }
-
-    /**
-     * Get the name of the template.
-     *
-     * @return string
-     */
-    public function getView(): string
-    {
-        return $this->view;
-    }
-
-    /**
-     * @throws \Throwable
-     *
-     * @return Field
-     */
-    public function checkRequired()
-    {
-        foreach ($this->required as $attribute) {
-            throw_if(! collect($this->attributes)->offsetExists($attribute),
-                FieldRequiredAttributeException::class, $attribute);
-        }
+        collect($this->required)
+            ->filter(function ($attribute) {
+                return ! array_key_exists($attribute, $this->attributes);
+            })
+            ->each(function ($attribute) {
+                throw new FieldRequiredAttributeException($attribute);
+            });
 
         return $this;
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View|mixed
+     * @return Factory|View|mixed
      */
     public function render()
     {
-        if (! $this->display) {
+        if (! $this->isSee()) {
             return;
         }
 
-        $this->runBeforeRender();
-        $this->checkRequired();
-        $this->translate();
+        $this
+            ->checkRequired()
+            ->modifyName()
+            ->modifyValue()
+            ->runBeforeRender()
+            ->translate()
+            ->checkError();
 
-        $attributes = $this->getModifyAttributes();
-        $this->attributes['id'] = $this->getId();
+        $id = $this->getId();
+        $this->set('id', $id);
 
-        if ($this->hasError()) {
-            if (! isset($attributes['class']) || is_null($attributes['class'])) {
-                $attributes['class'] = ' is-invalid';
-            } else {
-                $attributes['class'] .= ' is-invalid';
-            }
-        }
+        $errors = $this->getErrorsMessage();
 
         return view($this->view, array_merge($this->getAttributes(), [
-            'attributes' => $attributes,
-            'id'         => $this->getId(),
-            'old'        => $this->getOldValue(),
-            'slug'       => $this->getSlug(),
-            'oldName'    => $this->getOldName(),
-            'typeForm'   => $this->typeForm ?? $this->vertical()->typeForm,
+            'attributes'     => $this->getAllowAttributes(),
+            'dataAttributes' => $this->getAllowDataAttributes(),
+            'id'             => $id,
+            'old'            => $this->getOldValue(),
+            'slug'           => $this->getSlug(),
+            'oldName'        => $this->getOldName(),
+            'typeForm'       => $this->typeForm ?? $this->vertical()->typeForm,
         ]))
-            ->withErrors(session()->get('errors', app(ViewErrorBag::class)));
+            ->withErrors($errors);
     }
 
     /**
      * Localization of fields.
      *
-     * @return $this
+     * @return static
      */
     private function translate(): self
     {
-        if (empty($this->translations)) {
-            return $this;
-        }
-
         $lang = $this->get('lang');
 
-        foreach ($this->attributes as $key => $attribute) {
-            if (in_array($key, $this->translations, true)) {
-                $this->set($key, __($attribute, [], $lang));
-            }
-        }
+        collect($this->attributes)
+            ->intersectByKeys(array_flip($this->translations))
+            ->each(function ($value, $key) use ($lang) {
+                $this->set($key, __($value, [], $lang));
+            });
 
         return $this;
     }
@@ -265,44 +237,50 @@ class Field implements FieldContract
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
-    public function getModifyAttributes()
+    protected function getAllowAttributes(): Collection
     {
-        $modifiers = get_class_methods($this);
+        $allow = array_merge($this->universalAttributes, $this->inlineAttributes);
 
-        collect($this->getAttributes())
-            ->only(array_merge($this->universalAttributes, $this->inlineAttributes))
-            ->map(function ($item, $key) use ($modifiers) {
-                $key = title_case($key);
-                $signature = 'modify'.$key;
-                if (in_array($signature, $modifiers, true)) {
-                    $this->attributes[$key] = $this->$signature($item);
-                }
-            });
+        return collect($this->getAttributes())->only($allow);
+    }
 
-        return collect($this->getAttributes())
-            ->only(array_merge($this->universalAttributes, $this->inlineAttributes));
+    /**
+     * @return Collection
+     */
+    protected function getAllowDataAttributes()
+    {
+        return $this->getAllowAttributes()->filter(function (/* @noinspection PhpUnusedParameterInspection */ $value, $key) {
+            return Str::startsWith($key, 'data-');
+        });
     }
 
     /**
      * @return string
      */
-    public function getId(): string
+    protected function getId(): ?string
     {
+        $id = $this->get('id');
+
+        if ($id !== null) {
+            return (string) $id;
+        }
+
         $lang = $this->get('lang');
         $slug = $this->get('name');
+        $hash = sha1(json_encode($this->getAttributes()));
 
-        return Str::slug("field-$lang-$slug");
+        return Str::slug("field-$lang-$slug-$hash");
     }
 
     /**
-     * @param string $key
-     * @param null   $value
+     * @param string     $key
+     * @param mixed|null $value
      *
-     * @return $this|mixed|null
+     * @return static|mixed|null
      */
-    public function get($key, $value = null)
+    public function get(string $key, $value = null)
     {
         if (! isset($this->attributes[$key])) {
             return $value;
@@ -314,7 +292,7 @@ class Field implements FieldContract
     /**
      * @return string
      */
-    public function getSlug(): string
+    protected function getSlug(): string
     {
         return Str::slug($this->get('name'));
     }
@@ -339,6 +317,28 @@ class Field implements FieldContract
     }
 
     /**
+     * Checking for errors and filling css class.
+     *
+     * @return $this
+     */
+    private function checkError(): self
+    {
+        if (! $this->hasError()) {
+            return $this;
+        }
+
+        $class = $this->get('class');
+
+        if (is_null($class)) {
+            $this->set('class', ' is-invalid');
+
+            return $this;
+        }
+
+        return $this->set('class', $class.' is-invalid');
+    }
+
+    /**
      * @return bool
      */
     private function hasError(): bool
@@ -347,72 +347,61 @@ class Field implements FieldContract
     }
 
     /**
-     * @param mixed $name
-     *
-     * @return self
+     * @return static
      */
-    public function modifyName($name)
+    protected function modifyName()
     {
+        $name = $this->get('name');
         $prefix = $this->get('prefix');
         $lang = $this->get('lang');
 
-        $this->attributes['name'] = $name;
-
-        if (! is_null($prefix)) {
-            $this->attributes['name'] = $prefix.$name;
+        if ($prefix !== null && $lang !== null) {
+            return $this->set('name', $prefix.'['.$lang.']'.$name);
         }
 
-        if (is_null($prefix) && ! is_null($lang)) {
-            $this->attributes['name'] = $lang.$name;
+        if ($prefix !== null) {
+            return $this->set('name', $prefix.$name);
         }
 
-        if (! is_null($prefix) && ! is_null($lang)) {
-            $this->attributes['name'] = $prefix.'['.$lang.']'.$name;
-        }
-
-        if ($name instanceof \Closure) {
-            $this->attributes['name'] = $name($this->attributes);
+        if ($lang !== null) {
+            return $this->set('name', $lang.'['.$name.']');
         }
 
         return $this;
     }
 
     /**
-     * @param mixed $value
-     *
-     * @return self
+     * @return static
      */
-    public function modifyValue($value) : self
+    protected function modifyValue()
     {
-        $this->attributes['value'] = $this->getOldValue() ?: $value;
+        $value = $this->getOldValue() ?? $this->get('value');
 
-        if ($value instanceof \Closure) {
-            $this->attributes['value'] = $value($this->attributes);
+        if ($value instanceof Closure) {
+            $value = $value($this->attributes);
         }
 
-        return $this;
+        return $this->set('value', $value);
     }
 
     /**
+     * @deprecated
+     *
      * Create a group of the fields.
      *
-     * @param \Closure|array $group
+     * @param Closure|array $group
      *
-     * @return mixed
+     * @return Group
      */
     public static function group($group)
     {
-        if (! is_array($group)) {
-            return $group();
-        }
-
-        return $group;
+        return Group::make(is_callable($group) ? $group() : $group);
     }
 
     /**
      * Use vertical layout for the field.
      *
-     * @return $this
+     * @return static
      */
     public function vertical(): self
     {
@@ -424,7 +413,7 @@ class Field implements FieldContract
     /**
      * Use horizontal layout for the field.
      *
-     * @return $this
+     * @return static
      */
     public function horizontal(): self
     {
@@ -436,7 +425,7 @@ class Field implements FieldContract
     /**
      * Create separate line after the field.
      *
-     * @return $this
+     * @return static
      */
     public function hr(): self
     {
@@ -446,11 +435,11 @@ class Field implements FieldContract
     }
 
     /**
-     * @param \Closure $closure
+     * @param Closure $closure
      *
-     * @return Field
+     * @return static
      */
-    public function addBeforeRender(\Closure $closure): self
+    public function addBeforeRender(Closure $closure)
     {
         $this->beforeRender[] = $closure;
 
@@ -459,11 +448,45 @@ class Field implements FieldContract
 
     /**
      * Alternately performs all tasks.
+     *
+     * @return $this
      */
-    public function runBeforeRender()
+    public function runBeforeRender(): self
     {
         foreach ($this->beforeRender as $before) {
             $before->call($this);
         }
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    private function getErrorsMessage()
+    {
+        $errors = session()->get('errors', new MessageBag());
+
+        return $errors->getMessages();
+    }
+
+    /**
+     * @throws Throwable
+     *
+     * @return string
+     */
+    public function __toString(): string
+    {
+        $view = $this->render();
+
+        if (is_string($view)) {
+            return $view;
+        }
+
+        if (is_a($view, View::class)) {
+            return (string) $view->render();
+        }
+
+        return '';
     }
 }

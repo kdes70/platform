@@ -7,23 +7,25 @@ namespace Orchid\Screen\Layouts;
 use Orchid\Screen\Repository;
 
 /**
- * Class Tabs.
+ * Class View.
  */
 abstract class View extends Base
 {
     /**
-     * @var string
+     * @var array
      */
-    public $template;
+    private $data;
 
     /**
      * View constructor.
      *
-     * @param string $template
+     * @param string                                        $template
+     * @param \Illuminate\Contracts\Support\Arrayable|array $data
      */
-    public function __construct(string $template)
+    public function __construct(string $template, $data = [])
     {
         $this->template = $template;
+        $this->data = $data;
     }
 
     /**
@@ -33,6 +35,12 @@ abstract class View extends Base
      */
     public function build(Repository $repository)
     {
-        return view($this->template, $repository->toArray());
+        if (! $this->checkPermission($this, $repository)) {
+            return;
+        }
+
+        $data = array_merge($this->data, $repository->toArray());
+
+        return view($this->template, $data);
     }
 }

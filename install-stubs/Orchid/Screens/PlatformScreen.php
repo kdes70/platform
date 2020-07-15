@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Orchid\Screens;
 
-use Orchid\Screen\Link;
+use Orchid\Platform\Dashboard;
+use Orchid\Screen\Actions\Link;
 use Orchid\Screen\Layout;
 use Orchid\Screen\Screen;
-use Orchid\Platform\Dashboard;
 
 class PlatformScreen extends Screen
 {
@@ -28,7 +28,6 @@ class PlatformScreen extends Screen
     /**
      * Query data.
      *
-     *
      * @return array
      */
     public function query(): array
@@ -41,17 +40,21 @@ class PlatformScreen extends Screen
     /**
      * Button commands.
      *
-     * @return array
+     * @return Action[]
      */
     public function commandBar(): array
     {
         return [
-            Link::name('Website')
-                ->link('http://orchid.software')
+            Link::make('Website')
+                ->href('http://orchid.software')
                 ->icon('icon-globe-alt'),
 
-            Link::name('GitHub')
-                ->link('https://github.com/orchidsoftware/platform')
+            Link::make('Documentation')
+                ->href('https://orchid.software/en/docs')
+                ->icon('icon-docs'),
+
+            Link::make('GitHub')
+                ->href('https://github.com/orchidsoftware/platform')
                 ->icon('icon-social-github'),
         ];
     }
@@ -59,7 +62,7 @@ class PlatformScreen extends Screen
     /**
      * Views.
      *
-     * @return array
+     * @return Layout[]
      */
     public function layout(): array
     {

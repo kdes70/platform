@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Orchid\Platform;
 
+use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Orchid\Support\Color;
 
 class ItemMenu
 {
@@ -32,7 +34,7 @@ class ItemMenu
     /**
      * @var string
      */
-    public $groupname;
+    public $title;
 
     /**
      * @var bool
@@ -57,7 +59,7 @@ class ItemMenu
     /**
      * @var bool
      */
-    public $show = true;
+    public $display = true;
 
     /**
      * @var array
@@ -68,6 +70,11 @@ class ItemMenu
      * @var string
      */
     public $permission;
+
+    /**
+     * @var bool
+     */
+    public $hideEmpty = false;
 
     /**
      * @param string $permission
@@ -84,7 +91,7 @@ class ItemMenu
     /**
      * @param string|array $active
      *
-     * @return \Orchid\Platform\ItemMenu
+     * @return ItemMenu
      */
     public function active($active): self
     {
@@ -96,7 +103,7 @@ class ItemMenu
     /**
      * @param string $label
      *
-     * @return \Orchid\Platform\ItemMenu
+     * @return ItemMenu
      */
     public static function label(string $label): self
     {
@@ -121,13 +128,27 @@ class ItemMenu
     }
 
     /**
-     * @param bool $show
+     * @param bool $value
      *
      * @return ItemMenu
      */
-    public function show(bool $show): self
+    public function canSee(bool $value): self
     {
-        $this->show = $show;
+        $this->display = $value;
+
+        return $this;
+    }
+
+    /**
+     * Hide menu item if no children are available.
+     *
+     * @param bool $value
+     *
+     * @return ItemMenu
+     */
+    public function hideEmpty(bool $value = true): self
+    {
+        $this->hideEmpty = $value;
 
         return $this;
     }
@@ -157,7 +178,7 @@ class ItemMenu
     {
         $this->route = route($name, $parameters, $absolute);
 
-        $this->active([$this->route, $this->route.'/*']);
+        $this->active([$name, $this->route.'/*']);
 
         return $this;
     }
@@ -167,7 +188,7 @@ class ItemMenu
      *
      * @return ItemMenu
      */
-    public function url(string $url) : self
+    public function url(string $url): self
     {
         $this->route = $url;
 
@@ -177,13 +198,13 @@ class ItemMenu
     }
 
     /**
-     * @param string $groupname
+     * @param string|null $title
      *
      * @return ItemMenu
      */
-    public function groupName(string $groupname = null): self
+    public function title(string $title = null): self
     {
-        $this->groupname = $groupname;
+        $this->title = $title;
 
         return $this;
     }
@@ -193,7 +214,7 @@ class ItemMenu
      *
      * @return ItemMenu
      */
-    public function divider(bool $divider): self
+    public function divider(bool $divider = true): self
     {
         $this->divider = $divider;
 
@@ -225,15 +246,15 @@ class ItemMenu
     }
 
     /**
-     * @param \Closure $badge
-     * @param string   $class
+     * @param Closure $badge
+     * @param Color   $color
      *
-     * @return \Orchid\Platform\ItemMenu
+     * @return ItemMenu
      */
-    public function badge(\Closure $badge, string $class = 'bg-primary'): self
+    public function badge(Closure $badge, Color $color = null): self
     {
         $this->badge = [
-            'class' => $class,
+            'class' => $color ?? Color::PRIMARY(),
             'data'  => $badge,
         ];
 

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Orchid\Screens\Role;
 
-use Orchid\Screen\Link;
-use Orchid\Screen\Screen;
-use Illuminate\Http\Request;
-use Orchid\Platform\Models\Role;
-use Orchid\Support\Facades\Alert;
-use Orchid\Support\Facades\Dashboard;
 use App\Orchid\Layouts\Role\RoleEditLayout;
 use App\Orchid\Layouts\Role\RolePermissionLayout;
+use Illuminate\Http\Request;
+use Orchid\Platform\Models\Role;
+use Orchid\Screen\Action;
+use Orchid\Screen\Actions\Button;
+use Orchid\Screen\Layout;
+use Orchid\Screen\Screen;
+use Orchid\Support\Facades\Toast;
 
 class RoleEditScreen extends Screen
 {
@@ -20,7 +21,7 @@ class RoleEditScreen extends Screen
      *
      * @var string
      */
-    public $name = 'Roles';
+    public $name = 'Manage roles';
 
     /**
      * Display header description.
@@ -28,6 +29,16 @@ class RoleEditScreen extends Screen
      * @var string
      */
     public $description = 'Access rights';
+
+    /**
+     * @var string
+     */
+    public $permission = 'platform.systems.roles';
+
+    /**
+     * @var bool
+     */
+    private $exist = false;
 
     /**
      * Query data.
@@ -38,47 +49,37 @@ class RoleEditScreen extends Screen
      */
     public function query(Role $role): array
     {
-        $rolePermission = $role->permissions ?? [];
-        $permission = Dashboard::getPermission()
-            ->sort()
-            ->transform(function ($group) use ($rolePermission) {
-                $group = collect($group)->sortBy('description')->toArray();
-
-                foreach ($group as $key => $value) {
-                    $group[$key]['active'] = array_key_exists($value['slug'], $rolePermission);
-                }
-
-                return $group;
-            });
+        $this->exist = $role->exists;
 
         return [
-            'permission' => $permission,
             'role'       => $role,
+            'permission' => $role->getStatusPermission(),
         ];
     }
 
     /**
      * Button commands.
      *
-     * @return array
+     * @return Action[]
      */
     public function commandBar(): array
     {
         return [
-            Link::name(__('Save'))
+            Button::make(__('Save'))
                 ->icon('icon-check')
                 ->method('save'),
 
-            Link::name(__('Remove'))
+            Button::make(__('Remove'))
                 ->icon('icon-trash')
-                ->method('remove'),
+                ->method('remove')
+                ->canSee($this->exist),
         ];
     }
 
     /**
      * Views.
      *
-     * @return array
+     * @return Layout[]
      */
     public function layout(): array
     {
@@ -96,16 +97,22 @@ class RoleEditScreen extends Screen
      */
     public function save(Role $role, Request $request)
     {
+        $request->validate([
+            'role.slug' => 'required|unique:roles,slug,'.$role->id,
+        ]);
+
         $role->fill($request->get('role'));
 
-        foreach ($request->get('permissions', []) as $key => $value) {
-            $permissions[base64_decode($key)] = 1;
-        }
+        $role->permissions = collect($request->get('permissions'))
+            ->map(function ($value, $key) {
+                return [base64_decode($key) => $value];
+            })
+            ->collapse()
+            ->toArray();
 
-        $role->permissions = $permissions ?? [];
         $role->save();
 
-        Alert::info(__('Role was saved'));
+        Toast::info(__('Role was saved'));
 
         return redirect()->route('platform.systems.roles');
     }
@@ -113,13 +120,15 @@ class RoleEditScreen extends Screen
     /**
      * @param Role $role
      *
+     * @throws \Exception
+     *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function remove(Role $role)
     {
         $role->delete();
 
-        Alert::info(__('Role was removed'));
+        Toast::info(__('Role was removed'));
 
         return redirect()->route('platform.systems.roles');
     }

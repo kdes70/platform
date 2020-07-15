@@ -4,72 +4,108 @@ declare(strict_types=1);
 
 namespace Orchid\Tests\Unit;
 
-use Orchid\Alert\Alert;
+use Orchid\Support\Color;
+use Orchid\Support\Facades\Alert;
+use Orchid\Support\Facades\Toast;
 use Orchid\Tests\TestUnitCase;
-use Orchid\Alert\SessionStoreInterface;
 
 /**
  * Class AlertTest.
  */
 class AlertTest extends TestUnitCase
 {
+    public function testHelperAlert()
+    {
+        alert('test');
+
+        self::assertEquals('test', session('flash_notification.message'));
+        self::assertEquals('info', session('flash_notification.level'));
+
+        self::assertInstanceOf(\Orchid\Alert\Alert::class, alert());
+    }
+
     /**
-     * @var SessionStoreInterface
+     * @dataProvider getLevels
+     *
+     * @param $level
+     * @param $css
      */
-    protected $store;
+    public function testShouldFlashLevelsAlert(string $level, string $css)
+    {
+        Alert::$level('test');
+
+        self::assertEquals('test', session('flash_notification.message'));
+        self::assertEquals($css, session('flash_notification.level'));
+    }
 
     /**
-     * @var Alert
+     * @dataProvider getLevels
+     *
+     * @param $level
+     * @param $css
      */
-    protected $alert;
-
-    protected function setUp(): void
+    public function testShouldFlashLevelsToast(string $level, string $css)
     {
-        $this->store = $this->createMock(SessionStoreInterface::class);
-        $this->alert = new Alert($this->store);
+        Toast::$level('test');
+
+        self::assertEquals('test', session('toast_notification.message'));
+        self::assertEquals($css, session('toast_notification.level'));
     }
 
-    /** @test */
-    public function testShouldFlashAnInfoAlert()
+    public function testShouldToastValue()
     {
-        $this->store->expects($this->exactly(2))->method('flash')->withConsecutive([
-            $this->equalTo('flash_notification.message'),
-            $this->equalTo('test'),
-        ], [$this->equalTo('flash_notification.level'), $this->equalTo('info')]);
+        Toast::info('Hello Alexandr!')
+            ->autoHide(false)
+            ->delay(3000);
 
-        $this->alert->info('test');
+        self::assertEquals('Hello Alexandr!', session('toast_notification.message'));
+        self::assertEquals('false', session('toast_notification.auto_hide'));
+        self::assertEquals('3000', session('toast_notification.delay'));
     }
 
-    /** @test */
-    public function testShouldFlashSuccessAlert()
+    public function testShouldFlashViewAlert()
     {
-        $this->store->expects($this->exactly(2))->method('flash')->withConsecutive([
-            $this->equalTo('flash_notification.message'),
-            $this->equalTo('test'),
-        ], [$this->equalTo('flash_notification.level'), $this->equalTo('success')]);
+        Alert::view('exemplar::alert', Color::INFO(), [
+            'name' => 'Alexandr',
+        ]);
 
-        $this->alert->success('test');
+        self::assertEquals('Hello Alexandr!', session('flash_notification.message'));
+        self::assertEquals('info', session('flash_notification.level'));
     }
 
-    /** @test */
-    public function testShouldFlashErrorAlert()
+    public function testShouldCheckAlert()
     {
-        $this->store->expects($this->exactly(2))->method('flash')->withConsecutive([
-            $this->equalTo('flash_notification.message'),
-            $this->equalTo('test'),
-        ], [$this->equalTo('flash_notification.level'), $this->equalTo('danger')]);
+        self::assertFalse(Alert::check());
 
-        $this->alert->error('test');
+        Alert::info('check alert');
+
+        self::assertTrue(Alert::check());
     }
 
-    /** @test */
-    public function testShouldFlashWarningAlert()
+    /**
+     * Array of keys and css classes.
+     *
+     * @return array
+     */
+    public function getLevels(): array
     {
-        $this->store->expects($this->exactly(2))->method('flash')->withConsecutive([
-            $this->equalTo('flash_notification.message'),
-            $this->equalTo('test'),
-        ], [$this->equalTo('flash_notification.level'), $this->equalTo('warning')]);
-
-        $this->alert->warning('test');
+        return [
+            [
+                'info',
+                'info',
+            ],
+            [
+                'success',
+                'success',
+            ],
+            [
+                'error',
+                'danger',
+            ],
+            [
+                'warning',
+                'warning',
+            ],
+        ];
     }
 }

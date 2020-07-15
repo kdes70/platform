@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Orchid\Tests\Unit;
 
 use Orchid\Platform\Dashboard;
-use Orchid\Tests\TestUnitCase;
+use Orchid\Platform\ItemPermission;
 use Orchid\Platform\Models\Role;
 use Orchid\Platform\Models\User;
-use Orchid\Platform\ItemPermission;
+use Orchid\Tests\TestUnitCase;
 
 /**
  * Class PermissionTest.
@@ -44,7 +44,7 @@ class PermissionTest extends TestUnitCase
     /**
      * @return User
      */
-    private function createUser() : User
+    private function createUser(): User
     {
         return User::firstOrCreate([
             'email' => 'test@test.com',
@@ -62,7 +62,7 @@ class PermissionTest extends TestUnitCase
     /**
      * @return Role
      */
-    private function createRole() : Role
+    private function createRole(): Role
     {
         return Role::firstOrCreate([
             'slug' => 'admin',
@@ -89,6 +89,19 @@ class PermissionTest extends TestUnitCase
         $dashboard->registerPermissions($permission);
 
         $this->assertEquals($dashboard->getPermission()->count(), 1);
+    }
+
+    /**
+     * Dashboard remove permission.
+     */
+    public function testIsWasRemovedPermission()
+    {
+        $dashboard = new Dashboard();
+        $permission = ItemPermission::group('Test')
+            ->addPermission('test', 'Test Description');
+        $dashboard->registerPermissions($permission);
+        $dashboard->removePermission('test');
+        $this->assertEmpty($dashboard->getPermission()->get('Test'));
     }
 
     public function testReplasePermission()
@@ -134,5 +147,19 @@ class PermissionTest extends TestUnitCase
         $user->refresh();
 
         $this->assertFalse($user->inRole($role));
+    }
+
+    public function testEmptyPermission(): void
+    {
+        $nullPermission = $this->createUser()
+            ->setAttribute('permissions', null)
+            ->hasAccess('access.to.secret.data');
+
+        $stringPermission = $this->createUser()
+            ->setAttribute('permissions', '')
+            ->hasAccess('access.to.secret.data');
+
+        $this->assertFalse($nullPermission);
+        $this->assertFalse($stringPermission);
     }
 }

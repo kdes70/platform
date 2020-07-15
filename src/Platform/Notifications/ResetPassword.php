@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Notifications;
 
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class ResetPassword extends Notification
 {
@@ -23,7 +23,7 @@ class ResetPassword extends Notification
      *
      * @return void
      */
-    public function __construct($token)
+    public function __construct(string $token)
     {
         $this->token = $token;
     }
@@ -41,7 +41,7 @@ class ResetPassword extends Notification
     /**
      * Build the mail representation of the notification.
      *
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     public function toMail()
     {

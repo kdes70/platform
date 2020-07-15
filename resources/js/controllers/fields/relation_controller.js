@@ -1,11 +1,22 @@
-import {Controller} from 'stimulus';
+import { Controller } from 'stimulus';
 
 export default class extends Controller {
-    /**
-     *
-     */
+    static get targets() {
+        return ['select'];
+    }
+
     connect() {
-        const select = this.element.querySelector('select');
+        if (document.documentElement.hasAttribute('data-turbolinks-preview')) {
+            return;
+        }
+
+        const select = this.selectTarget;
+        const model = this.data.get('model');
+        const name = this.data.get('name');
+        const key = this.data.get('key');
+        const scope = this.data.get('scope');
+        const append = this.data.get('append');
+
 
         $.ajaxSetup({
             headers: {
@@ -23,54 +34,61 @@ export default class extends Controller {
                 url: () => this.data.get('route'),
                 dataType: 'json',
                 processResults: (data) => {
+                    let selectValues = $(select).val();
+                    selectValues = Array.isArray(selectValues) ? selectValues : [selectValues];
 
-                    let dataFormat = [];
-
-                    data.forEach(function(value,key) {
-                        dataFormat.push({
-                            'key' : key,
-                            'text': value
-                        });
-                    });
-
-                    console.log(dataFormat);
-
-                    // Tranforms the top-level key of the response object from 'items' to 'results'
                     return {
-                        results: dataFormat
+                        results: Object.keys(data).reduce((res, id) => {
+                            if (selectValues.includes(id.toString())) {
+                                return res;
+                            }
+
+                            return [...res, {
+                                id,
+                                text: data[id],
+                            }];
+                        }, []),
                     };
                 },
-                data: (params) => {
-                    return {
-                        search: params.term,
-                        model: this.data.get('model'),
-                        name: this.data.get('name'),
-                        key: this.data.get('key'),
-                    };
-                }
+                data: params => ({
+                    search: params.term,
+                    model,
+                    name,
+                    key,
+                    scope,
+                    append,
+                }),
             },
             placeholder: select.getAttribute('placeholder') || '',
-        }).on('select2:unselecting', function () {
-            $(this).data('state', 'unselected');
-        }).on('select2:opening', function (e) {
-            if ($(this).data('state') === 'unselected') {
-                e.preventDefault();
-                $(this).removeData('state');
-            }
         });
 
-        //if (!this.data.get('value')) {
-            //return;
-        //}
 
-        axios.post(this.data.get('route')).then((response) => {
+        // force change event for https://github.com/select2/select2/issues/1908
+        let forceChange = () => {
+            setTimeout(()=>{
+                select.dispatchEvent(new Event('change'));
+            },100);
+        }
+        $(select).on('select2:select', forceChange);
+        $(select).on('select2:unselect', forceChange);
+        $(select).on('select2:clear', forceChange);
+
+        if (!this.data.get('value')) {
+            return;
+        }
+
+        const values = JSON.parse(this.data.get('value'));
+
+        values.forEach((value) => {
             $(select)
-                .append(new Option(response.data.text, response.data.id, true, true))
+                .append(new Option(value.text, value.id, true, true))
                 .trigger('change');
         });
 
         document.addEventListener('turbolinks:before-cache', () => {
-            $(select).select2('destroy');
-        }, {once: true});
+            if (typeof $(select) !== 'undefined') {
+                $(select).select2('destroy');
+            }
+        }, { once: true });
     }
 }

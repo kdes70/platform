@@ -2,16 +2,19 @@
 
 declare(strict_types=1);
 
-use App\Orchid\Screens\ExampleScreen;
+use App\Orchid\Screens\Examples\ExampleCardsScreen;
+use App\Orchid\Screens\Examples\ExampleChartsScreen;
+use App\Orchid\Screens\Examples\ExampleFieldsAdvancedScreen;
+use App\Orchid\Screens\Examples\ExampleFieldsScreen;
+use App\Orchid\Screens\Examples\ExampleLayoutsScreen;
+use App\Orchid\Screens\Examples\ExampleScreen;
+use App\Orchid\Screens\Examples\ExampleTextEditorsScreen;
 use App\Orchid\Screens\PlatformScreen;
 use App\Orchid\Screens\Role\RoleEditScreen;
 use App\Orchid\Screens\Role\RoleListScreen;
 use App\Orchid\Screens\User\UserEditScreen;
 use App\Orchid\Screens\User\UserListScreen;
-use App\Orchid\Screens\Comment\CommentEditScreen;
-use App\Orchid\Screens\Comment\CommentListScreen;
-use App\Orchid\Screens\Category\CategoryEditScreen;
-use App\Orchid\Screens\Category\CategoryListScreen;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,27 +28,24 @@ use App\Orchid\Screens\Category\CategoryListScreen;
 */
 
 // Main
-$this->router->screen('/main', PlatformScreen::class)->name('platform.main');
+Route::screen('/main', PlatformScreen::class)->name('platform.main');
 
 // Users...
-$this->router->screen('users/{users}/edit', UserEditScreen::class)->name('platform.systems.users.edit');
-$this->router->screen('users', UserListScreen::class)->name('platform.systems.users');
+Route::screen('users/{users}/edit', UserEditScreen::class)->name('platform.systems.users.edit');
+Route::screen('users', UserListScreen::class)->name('platform.systems.users');
 
 // Roles...
-$this->router->screen('roles/{roles}/edit', RoleEditScreen::class)->name('platform.systems.roles.edit');
-$this->router->screen('roles/create', RoleEditScreen::class)->name('platform.systems.roles.create');
-$this->router->screen('roles', RoleListScreen::class)->name('platform.systems.roles');
-
-// Comments...
-$this->router->screen('comments/{comments}/edit', CommentEditScreen::class)->name('platform.systems.comments.edit');
-$this->router->screen('comments/create', CommentEditScreen::class)->name('platform.systems.comments.create');
-$this->router->screen('comments', CommentListScreen::class)->name('platform.systems.comments');
-
-// Categories...
-$this->router->screen('category/{category}/edit', CategoryEditScreen::class)->name('platform.systems.category.edit');
-$this->router->screen('category/create', CategoryEditScreen::class)->name('platform.systems.category.create');
-$this->router->screen('category', CategoryListScreen::class)->name('platform.systems.category');
+Route::screen('roles/{roles}/edit', RoleEditScreen::class)->name('platform.systems.roles.edit');
+Route::screen('roles/create', RoleEditScreen::class)->name('platform.systems.roles.create');
+Route::screen('roles', RoleListScreen::class)->name('platform.systems.roles');
 
 // Example...
-$this->router->screen('example', ExampleScreen::class)->name('platform.example');
+Route::screen('example', ExampleScreen::class)->name('platform.example');
+Route::screen('example-fields', ExampleFieldsScreen::class)->name('platform.example.fields');
+Route::screen('example-layouts', ExampleLayoutsScreen::class)->name('platform.example.layouts');
+Route::screen('example-charts', ExampleChartsScreen::class)->name('platform.example.charts');
+Route::screen('example-editors', ExampleTextEditorsScreen::class)->name('platform.example.editors');
+Route::screen('example-cards', ExampleCardsScreen::class)->name('platform.example.cards');
+Route::screen('example-advanced', ExampleFieldsAdvancedScreen::class)->name('platform.example.advanced');
+
 //Route::screen('/dashboard/screen/idea', 'Idea::class','platform.screens.idea');

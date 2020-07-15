@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace Orchid\Support\Facades;
 
-use Orchid\Alert\Alert as AlertClass;
 use Illuminate\Support\Facades\Facade;
+use Orchid\Alert\Alert as AlertClass;
+use Orchid\Support\Color;
 
 /**
  * Class Alert.
  *
- * @method static Alert info(string $name)
- * @method static Alert success(string $name)
- * @method static Alert error(string $name)
- * @method static Alert warning(string $name)
+ * @method static AlertClass info(string $message)
+ * @method static AlertClass success(string $message)
+ * @method static AlertClass error(string $message)
+ * @method static AlertClass warning(string $message)
+ * @method static AlertClass view(string $template, Color $level, array $data)
+ * @method static AlertClass check()
+ * @method static AlertClass message(string $message, string $level = null)
  */
 class Alert extends Facade
 {

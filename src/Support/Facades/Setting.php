@@ -10,10 +10,12 @@ use Orchid\Setting\Setting as SettingModel;
 /**
  * Class Setting.
  *
+ * @deprecated
+ *
  * @method static Setting set(string $name, string | array $value)
- * @method static Setting get(string $name, string | null $default)
+ * @method static Setting get(string $name, mixed | null $default)
  * @method static Setting forget(string $name)
- * @method static Setting getNoCache(string $name, string | null $default)
+ * @method static Setting getNoCache(string $name, mixed | null $default)
  */
 class Setting extends Facade
 {
@@ -24,6 +26,6 @@ class Setting extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return SettingModel::class;
+        return Dashboard::modelClass(SettingModel::class);
     }
 }

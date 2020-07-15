@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Models;
 
-use Orchid\Access\RoleAccess;
-use Orchid\Filters\Filterable;
-use Orchid\Access\RoleInterface;
 use Illuminate\Database\Eloquent\Model;
-use Orchid\Platform\Traits\MultiLanguageTrait;
+use Orchid\Access\RoleAccess;
+use Orchid\Access\RoleInterface;
+use Orchid\Filters\Filterable;
+use Orchid\Screen\AsSource;
 
 class Role extends Model implements RoleInterface
 {
-    use RoleAccess, Filterable, MultiLanguageTrait;
+    use RoleAccess, Filterable, AsSource;
 
     /**
      * @var string
@@ -53,18 +53,7 @@ class Role extends Model implements RoleInterface
         'id',
         'name',
         'slug',
+        'updated_at',
+        'created_at',
     ];
-
-    /**
-     * Set permission as boolean.
-     *
-     * @param array $permissions
-     */
-    public function setPermissionsAttribute(array $permissions = [])
-    {
-        foreach ($permissions as $key => $value) {
-            $permissions[$key] = (bool) $value;
-        }
-        $this->attributes['permissions'] = json_encode($permissions ?? []);
-    }
 }

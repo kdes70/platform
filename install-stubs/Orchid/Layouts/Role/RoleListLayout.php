@@ -4,37 +4,43 @@ declare(strict_types=1);
 
 namespace App\Orchid\Layouts\Role;
 
-use Orchid\Screen\TD;
+use Orchid\Platform\Models\Role;
+use Orchid\Screen\Actions\Link;
 use Orchid\Screen\Layouts\Table;
+use Orchid\Screen\TD;
 
 class RoleListLayout extends Table
 {
     /**
      * @var string
      */
-    public $data = 'roles';
+    public $target = 'roles';
 
     /**
      * @return array
      */
-    public function fields() : array
+    public function columns(): array
     {
         return [
-            TD::set('id', 'ID')
-                ->align(TD::ALIGN_CENTER)
-                ->width('100px')
-                ->sort()
-                ->link('platform.systems.roles.edit', 'slug'),
-
             TD::set('name', __('Name'))
                 ->sort()
-                ->link('platform.systems.roles.edit', 'slug', 'name'),
+                ->cantHide()
+                ->filter(TD::FILTER_TEXT)
+                ->render(function (Role $role) {
+                    return Link::make($role->name)
+                        ->route('platform.systems.roles.edit', $role->slug);
+                }),
 
             TD::set('slug', __('Slug'))
-                ->sort(),
+                ->sort()
+                ->cantHide()
+                ->filter(TD::FILTER_TEXT),
 
             TD::set('created_at', __('Created'))
-                ->sort(),
+                ->sort()
+                ->render(function (Role $role) {
+                    return $role->created_at->toDateTimeString();
+                }),
         ];
     }
 }

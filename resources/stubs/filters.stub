@@ -2,9 +2,9 @@
 
 namespace DummyNamespace;
 
-use Orchid\Screen\Field;
-use Orchid\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
+use Orchid\Filters\Filter;
+use Orchid\Screen\Field;
 
 class DummyClass extends Filter
 {
@@ -14,9 +14,12 @@ class DummyClass extends Filter
     public $parameters = [];
 
     /**
-     * @var bool
+     * @return string
      */
-    public $dashboard = false;
+    public function name(): string
+    {
+        return '';
+    }
 
     /**
      * @param Builder $builder
@@ -29,9 +32,9 @@ class DummyClass extends Filter
     }
 
     /**
-     * @return Field
+     * @return Field[]
      */
-    public function display(): ?Field
+    public function display(): array
     {
         //
     }

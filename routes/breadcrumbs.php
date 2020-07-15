@@ -2,59 +2,29 @@
 
 declare(strict_types=1);
 
+use DaveJamesMiller\Breadcrumbs\BreadcrumbsGenerator;
 use DaveJamesMiller\Breadcrumbs\Facades\Breadcrumbs;
 
 // Platform
-Breadcrumbs::for('platform.index', function ($trail) {
-    $trail->push(__('Platform'), route('platform.index'));
+Breadcrumbs::for('platform.index', function (BreadcrumbsGenerator $trail) {
+    $trail->push(__('Main'), route('platform.index'));
 });
 
 // Platform > System
-Breadcrumbs::for('platform.systems.index', function ($trail) {
+Breadcrumbs::for('platform.systems.index', function (BreadcrumbsGenerator $trail) {
     $trail->parent('platform.index');
     $trail->push(__('Systems'), route('platform.systems.index'));
 });
 
-// Platform > System > Menu
-Breadcrumbs::for('platform.systems.menu.index', function ($trail) {
-    $trail->parent('platform.systems.index');
-    $trail->push(__('Menu'), route('platform.systems.menu.index'));
-});
-
-// Platform > System > Menu > Editing
-Breadcrumbs::for('platform.systems.menu.show', function ($trail, $menu) {
-    $trail->parent('platform.systems.menu.index');
-    $trail->push(__('Editing'), route('platform.systems.menu.show', $menu));
-});
-
-// Platform > System > Announcement
-Breadcrumbs::for('platform.systems.announcement', function ($trail) {
-    $trail->parent('platform.systems.index');
-    $trail->push(__('Announcement'), route('platform.systems.announcement'));
-});
-
-//Posts
-
-// Platform > Posts
-Breadcrumbs::for('platform.entities.type', function ($trail, $type) {
+// Platform -> Notifications
+Breadcrumbs::for('platform.notifications', function (BreadcrumbsGenerator $trail) {
     $trail->parent('platform.index');
-    $trail->push(__('Posts'), route('platform.entities.type', $type->slug));
+    $trail->push(__('Notifications'));
 });
 
-// Platform > Posts > Create
-Breadcrumbs::for('platform.entities.type.create', function ($trail, $type) {
-    $trail->parent('platform.entities.type', $type);
-    $trail->push(__('Create'), route('platform.entities.type', $type->slug));
-});
-
-// Platform > Posts > Edit
-Breadcrumbs::for('platform.entities.type.edit', function ($trail, $type, $post) {
-    $trail->parent('platform.entities.type', $type);
-    $trail->push($post->getContent($type->slugFields) ?? '—', route('platform.entities.type.edit', [$type->slug, $post->slug]));
-});
-
-// Platform > Pages
-Breadcrumbs::for('platform.entities.type.page', function ($trail, $page) {
+// Platform -> Search Result
+Breadcrumbs::for('platform.search', function (BreadcrumbsGenerator $trail, string $query) {
     $trail->parent('platform.index');
-    $trail->push(__('Pages'), route('platform.entities.type.page', $page));
+    $trail->push(__('Search'));
+    $trail->push($query);
 });

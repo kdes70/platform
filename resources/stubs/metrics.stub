@@ -9,15 +9,19 @@ class DummyClass extends Metric
     /**
      * @var string
      */
-    public $title = 'Example Metric';
+    protected $title = 'Example Metric';
 
     /**
-     * @var array
+     * Get the labels available for the metric.
+     *
+     * @return array
      */
-    public $labels = [];
+    protected $labels = [];
 
     /**
-     * @var array
+     * The name of the key to fetch it from the query.
+     *
+     * @var string
      */
-    public $data = '';
+    protected $target = '';
 }

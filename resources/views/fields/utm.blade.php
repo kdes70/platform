@@ -1,8 +1,8 @@
-@component($typeForm,get_defined_vars())
+@component($typeForm, get_defined_vars())
 
     <div data-controller="fields--utm">
         <div class="input-group mb-3">
-            <input @include('platform::partials.fields.attributes', ['attributes' => $attributes]) data-target="fields--utm.url">
+            <input @attributes($attributes) data-target="fields--utm.url">
             <div class="input-group-append">
                 <button type="button" class="btn btn-default" data-toggle="modal"
                         data-target="#utm-{{$id}}">{{__('Generate UTM')}}</button>
@@ -15,9 +15,10 @@
                 <div class="modal-content">
                     <div class="modal-header m-b">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
+                            <i class="icon-cross icons" aria-hidden="true"></i>
                         </button>
-                        <h5 class="modal-title" id="exampleModalLabel">{{__('UTM Generator')}}</h5>
+                        <h4 class="modal-title m-b text-black font-thin"
+                            id="exampleModalLabel">{{__('UTM Generator')}}</h4>
                     </div>
                     <div class="modal-body">
                         <div class="row">
@@ -27,7 +28,8 @@
                                     <label>{{__('Campaign Source')}} - <span class="font-bold">utm_source</span></label>
                                     <input type="text" data-target="fields--utm.source" placeholder="google"
                                            class="form-control">
-                                    <small class="form-text text-muted w-b-k">{{__('Original referrer: (e.g. google, newsletter)')}}</small>
+                                    <small
+                                        class="form-text text-muted w-b-k">{{__('Original referrer: (e.g. google, newsletter)')}}</small>
                                 </div>
 
                                 <div class="form-group">

@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Str;
+use Orchid\Alert\Alert;
+use Orchid\Filters\HttpFilter;
+use Orchid\Support\Color;
+use Orchid\Support\Facades\Dashboard;
+use Orchid\Support\Facades\Setting;
+use Symfony\Component\Finder\Finder;
+
 if (! function_exists('alert')) {
     /**
      * Helper function to send an alert.
@@ -9,11 +17,15 @@ if (! function_exists('alert')) {
      * @param string|null $message
      * @param string      $level
      *
-     * @return \Orchid\Alert\Alert
+     * @return Alert
      */
-    function alert($message = null, $level = 'info')
+    function alert(string $message = null, string $level = null): Alert
     {
-        $notifier = app('alert');
+        $notifier = app(Alert::class);
+
+        if (! is_null($level)) {
+            $level = (string) Color::INFO();
+        }
 
         if (! is_null($message)) {
             return $notifier->message($message, $level);
@@ -25,53 +37,29 @@ if (! function_exists('alert')) {
 
 if (! function_exists('setting')) {
     /**
+     * @deprecated
+     *
      * @param string|array $key
      * @param null         $default
      *
-     * @return \Orchid\Support\Facades\Setting
+     * @return Setting
      */
     function setting($key, $default = null)
     {
-        return \Orchid\Support\Facades\Setting::get($key, $default);
-    }
-}
-
-if (! function_exists('generate_form')) {
-    /**
-     * Generate a ready-made html form for display to the user.
-     *
-     * @param array                                $fields
-     * @param array|\Orchid\Screen\Repository|null $data
-     * @param string|null                          $language
-     * @param string|null                          $prefix
-     *
-     * @throws \Throwable
-     *
-     * @return string
-     */
-    function generate_form(array $fields, $data = [], string $language = null, string $prefix = null)
-    {
-        if (is_array($data)) {
-            $data = new \Orchid\Screen\Repository($data);
-        }
-
-        return (new \Orchid\Screen\Builder($fields, $data))
-            ->setLanguage($language)
-            ->setPrefix($prefix)
-            ->generateForm();
+        return Setting::get($key, $default);
     }
 }
 
 if (! function_exists('is_sort')) {
 
     /**
-     * @param null $property
+     * @param string $property
      *
      * @return bool
      */
-    function is_sort($property = null)
+    function is_sort(string $property): bool
     {
-        $filter = new \Orchid\Filters\HttpFilter();
+        $filter = new HttpFilter();
 
         return $filter->isSort($property);
     }
@@ -80,13 +68,13 @@ if (! function_exists('is_sort')) {
 if (! function_exists('get_sort')) {
 
     /**
-     * @param null $property
+     * @param null|string $property
      *
      * @return string
      */
-    function get_sort($property)
+    function get_sort(?string $property): string
     {
-        $filter = new \Orchid\Filters\HttpFilter();
+        $filter = new HttpFilter();
 
         return $filter->getSort($property);
     }
@@ -95,13 +83,13 @@ if (! function_exists('get_sort')) {
 if (! function_exists('get_filter')) {
 
     /**
-     * @param null $property
+     * @param string $property
      *
      * @return string|array
      */
-    function get_filter($property)
+    function get_filter(string $property)
     {
-        $filter = new \Orchid\Filters\HttpFilter();
+        $filter = new HttpFilter();
 
         return $filter->getFilter($property);
     }
@@ -110,11 +98,11 @@ if (! function_exists('get_filter')) {
 if (! function_exists('get_filter_string')) {
 
     /**
-     * @param null $property
+     * @param string $property
      *
      * @return string
      */
-    function get_filter_string($property)
+    function get_filter_string(string $property): ?string
     {
         $filter = get_filter($property);
 
@@ -129,13 +117,13 @@ if (! function_exists('get_filter_string')) {
 if (! function_exists('revert_sort')) {
 
     /**
-     * @param null $property
+     * @param string $property
      *
      * @return string
      */
-    function revert_sort($property)
+    function revert_sort(string $property): string
     {
-        $filter = new \Orchid\Filters\HttpFilter();
+        $filter = new HttpFilter();
 
         return $filter->revertSort($property);
     }
@@ -147,18 +135,18 @@ if (! function_exists('orchid_mix')) {
      * @param string $package
      * @param string $dir
      *
-     * @throws Exception
+     * @throws \Throwable
      *
      * @return string
      */
-    function orchid_mix(string $file, string $package, string $dir = '') : string
+    function orchid_mix(string $file, string $package, string $dir = ''): string
     {
         $manifest = null;
 
-        $in = \Orchid\Support\Facades\Dashboard::getPublicDirectory()
+        $in = Dashboard::getPublicDirectory()
             ->get($package);
 
-        $resources = (new \Symfony\Component\Finder\Finder())
+        $resources = (new Finder())
             ->ignoreUnreadableDirs()
             ->in($in)
             ->files()
@@ -168,15 +156,13 @@ if (! function_exists('orchid_mix')) {
             $manifest = $resource;
         }
 
-        if (is_null($manifest)) {
-            throw new Exception('mix-manifest.json file not found');
-        }
+        throw_if($manifest === null, \Exception::class, 'mix-manifest.json file not found');
 
         $manifest = json_decode($manifest->getContents(), true);
 
         $mixPath = $manifest[$file];
 
-        if (\Illuminate\Support\Str::startsWith($mixPath, '/')) {
+        if (Str::startsWith($mixPath, '/')) {
             $mixPath = ltrim($mixPath, '/');
         }
 

@@ -8,6 +8,7 @@ use Mimey\MimeTypes;
 use Orchid\Platform\Dashboard;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Class ResourceController.
@@ -20,13 +21,35 @@ class ResourceController
     private $resource;
 
     /**
+     * @var MimeTypes
+     */
+    private $mimeTypes;
+
+    /**
+     * @var Finder
+     */
+    private $finder;
+
+    /**
+     * ResourceController constructor.
+     *
+     * @param MimeTypes $mimeTypes
+     * @param Finder    $finder
+     */
+    public function __construct(MimeTypes $mimeTypes, Finder $finder)
+    {
+        $this->mimeTypes = $mimeTypes;
+        $this->finder = $finder;
+    }
+
+    /**
      * Serve the requested resource.
      *
      * @param string    $package
      * @param string    $path
      * @param Dashboard $dashboard
      *
-     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
+     * @return BinaryFileResponse
      */
     public function show(string $package, string $path, Dashboard $dashboard)
     {
@@ -34,9 +57,9 @@ class ResourceController
             ->getPublicDirectory()
             ->get($package);
 
-        abort_if(is_null($dir), 404);
+        abort_if($dir === null, 404);
 
-        $resources = (new Finder())
+        $resources = $this->finder
             ->ignoreUnreadableDirs()
             ->followLinks()
             ->in($dir)
@@ -44,15 +67,20 @@ class ResourceController
             ->path(dirname($path))
             ->name(basename($path));
 
-        $iterator = tap($resources->getIterator())
-            ->rewind();
+        $iterator = tap($resources->getIterator())->rewind();
 
-        $this->resource = $iterator->current();
+        /* Changing the separator for Windows operating systems */
+        $path = str_replace('/', DIRECTORY_SEPARATOR, $path);
 
-        abort_if(is_null($this->resource), 404);
+        $this->resource = collect($iterator)
+            ->filter(static function (SplFileInfo $file) use ($path) {
+                return $file->getRelativePathname() === $path;
+            })
+            ->first();
 
-        $mime = new MimeTypes();
-        $mime = $mime->getMimeType($this->resource->getExtension());
+        abort_if($this->resource === null, 404);
+
+        $mime = $this->mimeTypes->getMimeType($this->resource->getExtension());
 
         return response()->file($this->resource->getRealPath(), [
             'Content-Type'  => $mime ?? 'text/plain',

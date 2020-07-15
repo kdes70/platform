@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Commands;
 
-use Orchid\Platform\Dashboard;
 use Illuminate\Console\Command;
+use Illuminate\Filesystem\Filesystem;
+use Orchid\Platform\Dashboard;
 
 class LinkCommand extends Command
 {
@@ -26,28 +27,27 @@ class LinkCommand extends Command
     /**
      * Execute the console command.
      *
-     * @param \Orchid\Platform\Dashboard $dashboard
+     * @param Dashboard  $dashboard
+     * @param Filesystem $filesystem
      *
      * @return void
      */
-    public function handle(Dashboard $dashboard)
+    public function handle(Dashboard $dashboard, Filesystem $filesystem)
     {
-        $prefix = public_path('/resources');
+        $prefix = public_path('resources');
 
-        if (file_exists($prefix)) {
-            $this->error("The [$prefix] directory already exists.");
+        $filesystem->ensureDirectoryExists($prefix);
 
-            return;
-        }
-
-        $dashboard->getPublicDirectory()->each(function ($path, $package) use ($prefix) {
+        $dashboard->getPublicDirectory()->each(function ($path, $package) use ($prefix, $filesystem) {
             $package = $prefix.'/'.$package;
             $path = rtrim($path, '/');
 
-            $this->getLaravel()->make('files')->makeDirectory($prefix, 0755, true);
-            $this->getLaravel()->make('files')->link($path, $package);
+            if (! $filesystem->exists($package)) {
+                $filesystem->link($path, $package);
+                $this->line("The [$package] directory has been linked.");
+            }
         });
 
-        $this->info("The [$prefix] directory has been linked.");
+        $this->info('Links have been created.');
     }
 }

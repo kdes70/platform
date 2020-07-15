@@ -10,7 +10,6 @@
     box-shadow: none;
   }
   .modal-header {
-    text-align: center;
     border-bottom: 0;
     padding: 25px 25px 0 25px;
 	display: block;
@@ -24,7 +23,7 @@
   }
   .modal-body {
     box-shadow: none;
-    padding: 0 25px 25px;
+    padding: 0 25px 15px;
     white-space: normal;
 
     .card{
@@ -34,11 +33,11 @@
 
   }
   .modal-footer {
-    @extend .b-t;
-    @extend .bg-light;
-    box-shadow: none;
-    margin-top: 0;
-    padding: 15px 25px;
+      @extend .border-top;
+      @extend .bg-light;
+      box-shadow: none;
+      margin-top: 0;
+      padding: 15px 25px;
   }
   &.fade {
     opacity: 1 !important;
@@ -141,7 +140,7 @@
     &.slide-right {
       .close {
         position: absolute;
-        top: 0;
+        top: 1.5em;
         right: 0;
         margin-right: 10px;
         z-index: 10;
@@ -155,7 +154,6 @@
         position: absolute;
         right: 0;
         margin: 0;
-        height: 100%;
         @include translate3d(100%, 0, 0);
         .modal-content-wrapper {
           height: 100%;
@@ -165,6 +163,7 @@
         }
       }
       .modal-content {
+        min-height: 100vh;
         border-radius: 0;
       }
     }

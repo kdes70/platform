@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Orchid\Access;
 
+use Exception;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Orchid\Platform\Dashboard;
 use Orchid\Platform\Models\User;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait RoleAccess
 {
+    use StatusAccess;
+
     /**
      * @return int
      */
-    public function getRoleId(): int
+    public function getRoleId()
     {
         return $this->getKey();
     }
@@ -23,11 +28,11 @@ trait RoleAccess
      */
     public function getRoleSlug(): string
     {
-        return $this->slug;
+        return $this->getAttribute('slug');
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getUsers()
     {
@@ -37,7 +42,7 @@ trait RoleAccess
     /**
      * The Users relationship.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function users(): BelongsToMany
     {
@@ -45,13 +50,13 @@ trait RoleAccess
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      *
      * @return bool|null
      */
     public function delete(): ?bool
     {
-        $isSoftDeleted = array_key_exists('Illuminate\Database\Eloquent\SoftDeletes', class_uses($this));
+        $isSoftDeleted = array_key_exists(SoftDeletes::class, class_uses($this));
         if ($this->exists && ! $isSoftDeleted) {
             $this->users()->detach();
         }

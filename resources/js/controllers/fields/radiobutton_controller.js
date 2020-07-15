@@ -5,10 +5,11 @@ export default class extends Controller {
      *
      */
     checked(event) {
-        event.target.offsetParent.querySelectorAll('input').forEach((input)=>{
+        event.target.offsetParent.querySelectorAll('input').forEach((input) => {
             input.removeAttribute('checked');
         });
 
-        event.target.querySelector('input').setAttribute('checked', 'checked');
+        event.target.setAttribute('checked', 'checked');
+        event.target.dispatchEvent(new Event("change"));
     }
 }

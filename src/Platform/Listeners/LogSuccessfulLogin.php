@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Orchid\Platform\Listeners;
 
 use Illuminate\Auth\Events\Login;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
 class LogSuccessfulLogin implements ShouldQueue
 {
@@ -21,7 +21,8 @@ class LogSuccessfulLogin implements ShouldQueue
      */
     public function handle(Login $event)
     {
-        $event->user->last_login = date('Y-m-d H:i:s');
-        $event->user->save();
+        tap($event->user, function ($user) {
+            $user->last_login = now();
+        })->save();
     }
 }

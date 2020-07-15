@@ -9,50 +9,38 @@ use Orchid\Screen\Field;
 /**
  * Class Quill.
  *
- * @method self accept($value = true)
- * @method self accesskey($value = true)
- * @method self autocomplete($value = true)
- * @method self autofocus($value = true)
- * @method self checked($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self formaction($value = true)
- * @method self formenctype($value = true)
- * @method self formmethod($value = true)
- * @method self formnovalidate($value = true)
- * @method self formtarget($value = true)
- * @method self list($value = true)
- * @method self max(int $value)
- * @method self maxlength(int $value)
- * @method self min(int $value)
- * @method self multiple($value = true)
- * @method self name(string $value)
- * @method self pattern($value = true)
- * @method self placeholder(string $value = null)
- * @method self readonly($value = true)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self src($value = true)
- * @method self step($value = true)
- * @method self tabindex($value = true)
- * @method self type($value = true)
- * @method self value($value = true)
- * @method self help(string $value = null)
- * @method self height($value = '300px')
+ * @method Quill autofocus($value = true)
+ * @method Quill disabled($value = true)
+ * @method Quill form($value = true)
+ * @method Quill formaction($value = true)
+ * @method Quill formenctype($value = true)
+ * @method Quill formmethod($value = true)
+ * @method Quill formnovalidate($value = true)
+ * @method Quill formtarget($value = true)
+ * @method Quill name(string $value = null)
+ * @method Quill placeholder(string $value = null)
+ * @method Quill readonly($value = true)
+ * @method Quill required(bool $value = true)
+ * @method Quill tabindex($value = true)
+ * @method Quill value($value = true)
+ * @method Quill help(string $value = null)
+ * @method Quill height($value = '300px')
+ * @method Quill title(string $value = null)
+ * @method Quill popover(string $value = null)
  */
 class Quill extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.quill';
+    protected $view = 'platform::fields.quill';
 
     /**
      * All attributes that are available to the field.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'value'  => null,
         'height' => '300px',
     ];
@@ -62,8 +50,7 @@ class Quill extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
-        'accept',
+    protected $inlineAttributes = [
         'accesskey',
         'autocomplete',
         'autofocus',
@@ -75,21 +62,12 @@ class Quill extends Field
         'formmethod',
         'formnovalidate',
         'formtarget',
-        'list',
-        'max',
-        'maxlength',
-        'min',
-        'multiple',
         'name',
-        'pattern',
         'placeholder',
         'readonly',
         'required',
-        'size',
-        'src',
         'step',
         'tabindex',
-        'type',
         'value',
         'height',
     ];

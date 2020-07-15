@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Orchid\Tests\Unit;
 
 use Orchid\Platform\Dashboard;
-use Orchid\Tests\TestUnitCase;
 use Orchid\Platform\Models\User;
+use Orchid\Tests\TestUnitCase;
 
 /**
  * Class DashboardTest.
@@ -100,13 +100,25 @@ class DashboardTest extends TestUnitCase
         ]);
     }
 
-    protected function setUp() : void
+    /**
+     * @param string $name
+     */
+    public function testIsMacro($name = 'customMarcoName')
+    {
+        Dashboard::macro('returnNameMacroFunction', function (string $test) {
+            return $test;
+        });
+
+        $this->assertEquals(Dashboard::returnNameMacroFunction($name), $name);
+    }
+
+    protected function setUp(): void
     {
         parent::setUp();
         Dashboard::configure([]);
     }
 
-    protected function tearDown() : void
+    protected function tearDown(): void
     {
         parent::tearDown();
         Dashboard::configure([]);

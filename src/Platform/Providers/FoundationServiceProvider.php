@@ -4,22 +4,28 @@ declare(strict_types=1);
 
 namespace Orchid\Platform\Providers;
 
-use Orchid\Platform\Dashboard;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
-use Orchid\Alert\AlertServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\ScoutServiceProvider;
-use Watson\Active\ActiveServiceProvider;
-use Orchid\Platform\Commands\LinkCommand;
-use Orchid\Platform\Commands\RowsCommand;
+use Laravel\Ui\UiCommand;
+use Laravel\Ui\UiServiceProvider;
 use Orchid\Platform\Commands\AdminCommand;
 use Orchid\Platform\Commands\ChartCommand;
-use Orchid\Platform\Commands\TableCommand;
 use Orchid\Platform\Commands\FilterCommand;
-use Orchid\Platform\Commands\ScreenCommand;
 use Orchid\Platform\Commands\InstallCommand;
+use Orchid\Platform\Commands\LinkCommand;
+use Orchid\Platform\Commands\ListenerCommand;
 use Orchid\Platform\Commands\MetricsCommand;
+use Orchid\Platform\Commands\RowsCommand;
+use Orchid\Platform\Commands\ScreenCommand;
 use Orchid\Platform\Commands\SelectionCommand;
+use Orchid\Platform\Commands\TableCommand;
+use Orchid\Platform\Dashboard;
+use Orchid\Presets\Orchid;
+use Orchid\Presets\Source;
+use Watson\Active\ActiveServiceProvider;
 
 /**
  * Class FoundationServiceProvider.
@@ -43,6 +49,7 @@ class FoundationServiceProvider extends ServiceProvider
         ChartCommand::class,
         MetricsCommand::class,
         SelectionCommand::class,
+        ListenerCommand::class,
     ];
 
     /**
@@ -52,9 +59,11 @@ class FoundationServiceProvider extends ServiceProvider
     {
         $this
             ->registerOrchid()
+            ->registerAssets()
             ->registerDatabase()
             ->registerConfig()
             ->registerTranslations()
+            ->registerBlade()
             ->registerViews()
             ->registerProviders();
     }
@@ -66,7 +75,9 @@ class FoundationServiceProvider extends ServiceProvider
      */
     protected function registerDatabase(): self
     {
-        $this->loadMigrationsFrom(realpath(PLATFORM_PATH.'/database/migrations/platform'));
+        $this->publishes([
+            Dashboard::path('database/migrations') => database_path('migrations'),
+        ], 'migrations');
 
         return $this;
     }
@@ -78,7 +89,7 @@ class FoundationServiceProvider extends ServiceProvider
      */
     public function registerTranslations(): self
     {
-        $this->loadJsonTranslationsFrom(realpath(PLATFORM_PATH.'/resources/lang/'));
+        $this->loadJsonTranslationsFrom(Dashboard::path('resources/lang/'));
 
         return $this;
     }
@@ -91,7 +102,7 @@ class FoundationServiceProvider extends ServiceProvider
     protected function registerConfig(): self
     {
         $this->publishes([
-            realpath(PLATFORM_PATH.'/config/platform.php') => config_path('platform.php'),
+            Dashboard::path('config/platform.php') => config_path('platform.php'),
         ], 'config');
 
         return $this;
@@ -105,9 +116,59 @@ class FoundationServiceProvider extends ServiceProvider
     protected function registerOrchid(): self
     {
         $this->publishes([
-            realpath(PLATFORM_PATH.'/install-stubs/routes/') => base_path('routes'),
-            realpath(PLATFORM_PATH.'/install-stubs/Orchid/') => app_path('Orchid'),
+            Dashboard::path('install-stubs/routes/') => base_path('routes'),
+            Dashboard::path('install-stubs/Orchid/') => app_path('Orchid'),
         ], 'orchid-stubs');
+
+        return $this;
+    }
+
+    /**
+     * Register assets.
+     *
+     * @return $this
+     */
+    protected function registerAssets(): self
+    {
+        $this->publishes([
+            Dashboard::path('resources/js')   => resource_path('js/orchid'),
+            Dashboard::path('resources/sass') => resource_path('sass/orchid'),
+        ], 'orchid-assets');
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function registerBlade(): self
+    {
+        Blade::directive('attributes', function (string $attributes) {
+            $part = 'function ($attributes) {
+                foreach ($attributes as $name => $value) {
+                    if (is_null($value)) {
+                        continue;
+                    }
+
+                    if (is_bool($value) && $value === false) {
+                        continue;
+                    }
+                    if (is_bool($value)) {
+                        echo e($name)." ";
+                        continue;
+                    }
+
+                    if (is_array($value)) {
+                        echo json_decode($value)." ";
+                        continue;
+                    }
+
+                    echo e($name) . \'="\' . e($value) . \'"\'." ";
+                }
+            }';
+
+            return "<?php call_user_func($part, $attributes); ?>";
+        });
 
         return $this;
     }
@@ -119,10 +180,12 @@ class FoundationServiceProvider extends ServiceProvider
      */
     public function registerViews(): self
     {
-        $this->loadViewsFrom(PLATFORM_PATH.'/resources/views', 'platform');
+        $path = Dashboard::path('resources/views');
+
+        $this->loadViewsFrom($path, 'platform');
 
         $this->publishes([
-            PLATFORM_PATH.'/resources/views' => resource_path('views/vendor/platform'),
+            $path => resource_path('views/vendor/platform'),
         ], 'views');
 
         return $this;
@@ -146,10 +209,10 @@ class FoundationServiceProvider extends ServiceProvider
     public function provides(): array
     {
         return [
+            UiServiceProvider::class,
             ScoutServiceProvider::class,
             ActiveServiceProvider::class,
             RouteServiceProvider::class,
-            AlertServiceProvider::class,
             EventServiceProvider::class,
             PlatformServiceProvider::class,
         ];
@@ -162,27 +225,47 @@ class FoundationServiceProvider extends ServiceProvider
     {
         $this->commands($this->commands);
 
-        $this->app->singleton(Dashboard::class, function () {
+        $this->app->singleton(Dashboard::class, static function () {
             return new Dashboard();
         });
 
         if (! Route::hasMacro('screen')) {
             Route::macro('screen', function ($url, $screen, $name = null) {
-                /* @var \Illuminate\Routing\Router $this */
+                /* @var Router $this */
                 return $this->any($url.'/{method?}/{argument?}', [$screen, 'handle'])
                     ->name($name);
             });
         }
 
-        if (! defined('PLATFORM_PATH')) {
-            /*
-             * Get the path to the ORCHID Platform folder.
-             */
-            define('PLATFORM_PATH', realpath(__DIR__.'/../../../'));
-        }
-
         $this->mergeConfigFrom(
-            realpath(PLATFORM_PATH.'/config/platform.php'), 'platform'
+            Dashboard::path('config/platform.php'), 'platform'
         );
+
+        /*
+         * Adds Orchid source preset to Laravel's default preset command.
+         */
+
+        UiCommand::macro('orchid-source', static function (UiCommand $command) {
+            $command->call('vendor:publish', [
+                '--provider' => self::class,
+                '--tag'      => 'orchid-assets',
+                '--force'    => true,
+            ]);
+
+            Source::install();
+            $command->warn('Please run "npm install && npm run dev" to compile your fresh scaffolding.');
+            $command->info('Orchid scaffolding installed successfully.');
+        });
+
+        /*
+         * Adds Orchid preset to Laravel's default preset command.
+         */
+        UiCommand::macro('orchid', static function (UiCommand $command) {
+            Orchid::install();
+            $command->warn('Please run "npm install && npm run dev" to compile your fresh scaffolding.');
+            $command->warn("After that, You need to add this line to AppServiceProvider's register method:");
+            $command->warn("app(\Orchid\Platform\Dashboard::class)->registerResource('scripts','/js/dashboard.js');");
+            $command->info('Orchid scaffolding installed successfully.');
+        });
     }
 }

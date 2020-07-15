@@ -4,19 +4,34 @@ declare(strict_types=1);
 
 namespace Orchid\Screen;
 
-use ReflectionClass;
-use ReflectionParameter;
-use Illuminate\Support\Arr;
-use Illuminate\Http\Request;
+use Illuminate\Contracts\Routing\UrlRoutable;
+use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Orchid\Platform\Http\Controllers\Controller;
+use Orchid\Screen\Layouts\Base;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionParameter;
+use Throwable;
 
 /**
  * Class Screen.
  */
 abstract class Screen extends Controller
 {
+    use Commander;
+
+    /**
+     * The number of predefined arguments in the route.
+     *
+     * Example: dashboard/my-screen/{method?}/{argument?}
+     */
+    private const COUNT_ROUTE_VARIABLES = 2;
+
     /**
      * Display header name.
      *
@@ -46,7 +61,7 @@ abstract class Screen extends Controller
     /**
      * @var Repository
      */
-    private $post;
+    private $source;
 
     /**
      * @var array
@@ -55,92 +70,99 @@ abstract class Screen extends Controller
 
     /**
      * Screen constructor.
+     *
+     * @param Request|null $request
      */
-    public function __construct()
+    public function __construct(Request $request = null)
     {
-        $this->request = request();
+        $this->request = $request ?? request();
     }
 
     /**
      * Button commands.
      *
-     * @return array
+     * @return Action[]
      */
     abstract public function commandBar(): array;
 
     /**
      * Views.
      *
-     * @return Layouts[]
+     * @return Layout[]
      */
     abstract public function layout(): array;
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      *
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function build()
     {
-        $layout = Layout::blank([
+        return Layout::blank([
             $this->layout(),
-        ]);
-
-        return $layout->build($this->post);
+        ])->build($this->source);
     }
 
     /**
      * @param mixed $method
-     * @param mixed $slugLayouts
+     * @param mixed $slug
      *
-     * @throws \Throwable
+     * @throws Throwable
      *
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
-    protected function asyncBuild($method, $slugLayouts)
+    protected function asyncBuild($method, $slug)
     {
-        $this->arguments = $this->request->json()->all();
+        $this->arguments = $this->request->all();
 
         $this->reflectionParams($method);
+
         $query = call_user_func_array([$this, $method], $this->arguments);
-        $post = new Repository($query);
+        $source = new Repository($query);
 
-        foreach ($this->layout() as $layout) {
+        /** @var Base $layout */
+        $layout = collect($this->layout())
+            ->map(function ($layout) {
+                return is_object($layout) ? $layout : app()->make($layout);
+            })
+            ->map(function (Base $layout) use ($slug) {
+                return $layout->findBySlug($slug);
+            })
+            ->filter()
+            ->whenEmpty(function () use ($slug) {
+                abort(404, "Async template: {$slug} not found");
+            })
+            ->first();
 
-            /** @var \Orchid\Screen\Layouts\Base|string $layout */
-            $layout = is_object($layout) ? $layout : new $layout();
-
-            if ($layout->getSlug() === $slugLayouts) {
-                $layout->async = true;
-
-                return $layout->build($post);
-            }
-        }
+        return $layout->currentAsync()->build($source);
     }
 
     /**
-     * @throws \Throwable
+     * @throws Throwable
      *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @return Factory|\Illuminate\View\View
      */
     public function view()
     {
         $this->reflectionParams('query');
         $query = call_user_func_array([$this, 'query'], $this->arguments);
-        $this->post = new Repository($query);
+        $this->source = new Repository($query);
+        $commandBar = $this->buildCommandBar($this->source);
 
-        return view('platform::container.layouts.base', [
-            'screen'    => $this,
+        return view('platform::layouts.base', [
+            'screen'     => $this,
+            'commandBar' => $commandBar,
         ]);
     }
 
     /**
      * @param mixed ...$parameters
      *
-     * @throws \ReflectionException
-     * @throws \Throwable
+     * @throws ReflectionException
+     * @throws Throwable
      *
-     * @return \Illuminate\Contracts\View\Factory|View|\Illuminate\View\View|mixed
+     * @return Factory|View|\Illuminate\View\View|mixed
      */
     public function handle(...$parameters)
     {
@@ -149,13 +171,13 @@ abstract class Screen extends Controller
         if ($this->request->method() === 'GET' || (! count($parameters))) {
             $this->arguments = $parameters;
 
-            return $this->view();
+            return $this->redirectOnGetMethodCallOrShowView();
         }
 
         $method = array_pop($parameters);
         $this->arguments = $parameters;
 
-        if (starts_with($method, 'async')) {
+        if (Str::startsWith($method, 'async')) {
             return $this->asyncBuild($method, array_pop($this->arguments));
         }
 
@@ -165,11 +187,11 @@ abstract class Screen extends Controller
     }
 
     /**
-     * @param string $method
+     * @param mixed $method
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
-    private function reflectionParams(string $method)
+    private function reflectionParams($method)
     {
         $class = new ReflectionClass($this);
 
@@ -183,39 +205,40 @@ abstract class Screen extends Controller
 
         $parameters = $class->getMethod($method)->getParameters();
 
-        $arguments = [];
-
-        foreach ($parameters as $key => $parameter) {
-            $arguments[] = $this->bind($key, $parameter);
-        }
-
-        $this->arguments = $arguments;
+        $this->arguments = collect($parameters)
+            ->map(function ($parameter, $key) {
+                return $this->bind($key, $parameter);
+            })->all();
     }
 
     /**
-     * @param int|string               $key
-     * @param ReflectionParameter|null $parameter
+     * It takes the serial number of the argument and the required parameter.
+     * To convert to object.
+     *
+     * @param int                 $key
+     * @param ReflectionParameter $parameter
+     *
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      *
      * @return mixed
      */
-    private function bind($key, $parameter)
+    private function bind(int $key, ReflectionParameter $parameter)
     {
-        if (is_null($parameter->getClass())) {
-            return $this->arguments[$key] ?? null;
+        $class = optional($parameter->getClass())->name;
+        $original = array_values($this->arguments)[$key] ?? null;
+
+        if ($class === null) {
+            return $original;
         }
 
-        $class = $parameter->getClass()->name;
+        if (is_object($original)) {
+            return $original;
+        }
 
-        $object = Arr::first($this->arguments, function ($value) use ($class) {
-            return is_subclass_of($value, $class) || is_a($value, $class);
-        });
+        $object = app()->make($class);
 
-        if (is_null($object)) {
-            $object = app()->make($class);
-
-            if (method_exists($object, 'resolveRouteBinding') && isset($this->arguments[$key])) {
-                $object = $object->resolveRouteBinding($this->arguments[$key]);
-            }
+        if ($original !== null && is_a($object, UrlRoutable::class)) {
+            return $object->resolveRouteBinding($original);
         }
 
         return $object;
@@ -226,30 +249,43 @@ abstract class Screen extends Controller
      */
     private function checkAccess(): bool
     {
-        if (empty($this->permission)) {
-            return true;
-        }
-
-        $permissions = Arr::wrap($this->permission);
-
-        foreach ($permissions as $item) {
-            if (Auth::user()->hasAccess($item)) {
-                return true;
-            }
-        }
-
-        return false;
+        return collect($this->permission)
+            ->map(static function ($item) {
+                return Auth::user()->hasAccess($item);
+            })
+            ->whenEmpty(function (Collection $permission) {
+                return $permission->push(true);
+            })
+            ->contains(true);
     }
 
     /**
-     * @return array
+     * @return string
      */
-    public function buildCommandBar() : array
+    public function formValidateMessage(): string
     {
-        foreach ($this->commandBar() as $command) {
-            $commands[] = $command->build($this->post);
+        return __('Please check the entered data, it may be necessary to specify in other languages.');
+    }
+
+    /**
+     * Defines the URL to represent
+     * the page based on the calculation of link arguments.
+     *
+     * @throws Throwable
+     *
+     * @return Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    protected function redirectOnGetMethodCallOrShowView()
+    {
+        $expectedArg = count($this->request->route()->getCompiled()->getVariables()) - self::COUNT_ROUTE_VARIABLES;
+        $realArg = count($this->arguments);
+
+        if ($realArg <= $expectedArg) {
+            return $this->view();
         }
 
-        return $commands ?? [];
+        array_pop($this->arguments);
+
+        return redirect()->action([static::class, 'handle'], $this->arguments);
     }
 }

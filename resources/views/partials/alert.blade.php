@@ -1,16 +1,15 @@
-@if (session()->has('flash_notification.message'))
-    <div class="alert alert-{{ session('flash_notification.level') }}">
+@if (session()->has(\Orchid\Alert\Alert::SESSION_MESSAGE))
+    <div class="alert alert-{{ session(\Orchid\Alert\Alert::SESSION_LEVEL) }}">
         <button type="button"
                 class="close"
                 data-dismiss="alert"
                 aria-hidden="true">&times;
         </button>
-        {!! session('flash_notification.message') !!}
+        {!! session(\Orchid\Alert\Alert::SESSION_MESSAGE) !!}
 
         @yield('flash_notification.sub_message')
     </div>
 @endif
-<div id="dashboard-alerts"></div>
 
 @empty(!$errors->count())
     <div class="alert alert-danger" role="alert">

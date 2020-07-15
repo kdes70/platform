@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Orchid\Screen\Layouts;
 
+use Illuminate\Contracts\View\Factory;
 use Orchid\Screen\Builder;
 use Orchid\Screen\Repository;
+use Throwable;
 
 /**
  * Class Collapse.
@@ -15,7 +17,7 @@ abstract class Collapse extends Base
     /**
      * @var string
      */
-    public $template = 'platform::container.layouts.collapse';
+    protected $template = 'platform::layouts.collapse';
 
     /**
      * @var Repository
@@ -28,16 +30,30 @@ abstract class Collapse extends Base
     private $label = 'Options';
 
     /**
-     * @param \Orchid\Screen\Repository $query
+     * Base constructor.
      *
-     * @throws \Throwable
-     *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @param Base[] $layouts
      */
-    public function build(Repository $query)
+    public function __construct(array $layouts = [])
     {
-        $this->query = $query;
-        $form = new Builder($this->fields(), $query);
+        $this->layouts = $layouts;
+    }
+
+    /**
+     * @param Repository $repository
+     *
+     * @throws Throwable
+     *
+     * @return Factory|\Illuminate\View\View
+     */
+    public function build(Repository $repository)
+    {
+        if (! $this->checkPermission($this, $repository)) {
+            return;
+        }
+
+        $this->query = $repository;
+        $form = new Builder($this->fields(), $repository);
 
         return view($this->template, [
             'form'  => $form->generateForm(),
@@ -61,5 +77,5 @@ abstract class Collapse extends Base
     /**
      * @return array
      */
-    abstract public function fields(): array;
+    abstract protected function fields(): array;
 }

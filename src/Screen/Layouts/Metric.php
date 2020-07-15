@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Orchid\Screen\Layouts;
 
+use Illuminate\Contracts\View\Factory;
 use Orchid\Screen\Repository;
 
 /**
@@ -14,22 +15,29 @@ abstract class Metric extends Base
     /**
      * @var string
      */
-    public $template = 'platform::container.layouts.metric';
+    protected $template = 'platform::layouts.metric';
 
     /**
      * @var string
      */
-    public $title = 'Example Metric';
+    protected $title = 'Example Metric';
 
     /**
+     * Set the labels for each possible field value.
+     *
      * @var array
      */
-    public $labels = [];
+    protected $labels = [];
 
     /**
+     * Data source.
+     *
+     * The name of the key to fetch it from the query.
+     * The results of which will be elements of the metric.
+     *
      * @var string
      */
-    public $data;
+    protected $target;
 
     /**
      * @var string
@@ -42,13 +50,17 @@ abstract class Metric extends Base
     protected $keyDiff = 'diff';
 
     /**
-     * @param \Orchid\Screen\Repository $query
+     * @param Repository $repository
      *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @return Factory|\Illuminate\View\View
      */
-    public function build(Repository $query)
+    public function build(Repository $repository)
     {
-        $data = $query->getContent($this->data, []);
+        if (! $this->checkPermission($this, $repository)) {
+            return;
+        }
+
+        $data = $repository->getContent($this->target, []);
         $metrics = array_combine($this->labels, $data);
 
         return view($this->template, [

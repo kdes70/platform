@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Orchid\Composers;
 
-use Orchid\Platform\Menu;
-use Orchid\Platform\ItemMenu;
 use Orchid\Platform\Dashboard;
+use Orchid\Platform\ItemMenu;
+use Orchid\Platform\Menu;
 
 class MainMenuComposer
 {
@@ -33,60 +33,76 @@ class MainMenuComposer
         // Profile
         $this->dashboard->menu
             ->add(Menu::PROFILE,
-                ItemMenu::label('Example 1')
+                ItemMenu::label('Action')
                     ->icon('icon-compass')
-            )
-            ->add(Menu::PROFILE,
-                ItemMenu::label('Example 2')
-                    ->icon('icon-heart')
                     ->badge(function () {
                         return 6;
                     })
             )
             ->add(Menu::PROFILE,
-                ItemMenu::label('Example 3')
-                    ->icon('icon-microphone')
+                ItemMenu::label('Another action')
+                    ->icon('icon-heart')
             );
 
         // Main
         $this->dashboard->menu
             ->add(Menu::MAIN,
-                ItemMenu::label('Example 4')
-                    ->icon('icon-folder')
+                ItemMenu::label('Example screen')
+                    ->icon('icon-monitor')
                     ->route('platform.example')
-                    ->groupName('Example boilerplate')
+                    ->title('Navigation')
             )
             ->add(Menu::MAIN,
-                ItemMenu::label('Example 5 menu')
+                ItemMenu::label('Dropdown menu')
                     ->slug('example-menu')
-                    ->icon('icon-heart')
+                    ->icon('icon-code')
                     ->childs()
             )
             ->add('example-menu',
-                ItemMenu::label('Example sub 1')
+                ItemMenu::label('Sub element item 1')
                     ->icon('icon-bag')
-                    ->route('platform.example')
             )
             ->add('example-menu',
-                ItemMenu::label('Example sub 2')
+                ItemMenu::label('Sub element item 2')
                     ->icon('icon-heart')
-                    ->route('platform.example')
-                    ->groupName('Separate')
             )
             ->add(Menu::MAIN,
-                ItemMenu::label('Example 6')
-                    ->icon('icon-code')
-                    ->route('platform.example')
+                ItemMenu::label('Basic Elements')
+                    ->title('Form controls')
+                    ->icon('icon-note')
+                    ->route('platform.example.fields')
             )
             ->add(Menu::MAIN,
-                ItemMenu::label('Example 7')
-                    ->icon('icon-bag')
-                    ->route('platform.example')
+                ItemMenu::label('Advanced Elements')
+                    ->icon('icon-briefcase')
+                    ->route('platform.example.advanced')
             )
             ->add(Menu::MAIN,
-                ItemMenu::label('Example 8')
-                    ->icon('icon-folder')
-                    ->route('platform.example')
+                ItemMenu::label('Text Editors')
+                    ->icon('icon-list')
+                    ->route('platform.example.editors')
+            )
+            ->add(Menu::MAIN,
+                ItemMenu::label('Overview layouts')
+                    ->title('Layouts')
+                    ->icon('icon-layers')
+                    ->route('platform.example.layouts')
+            )
+            ->add(Menu::MAIN,
+                ItemMenu::label('Chart tools')
+                    ->icon('icon-bar-chart')
+                    ->route('platform.example.charts')
+            )
+            ->add(Menu::MAIN,
+                ItemMenu::label('Cards')
+                    ->icon('icon-grid')
+                    ->route('platform.example.cards')
+            )
+            ->add(Menu::MAIN,
+                ItemMenu::label('Documentation')
+                    ->title('Docs')
+                    ->icon('icon-docs')
+                    ->url('https://orchid.software/en/docs')
             );
     }
 }

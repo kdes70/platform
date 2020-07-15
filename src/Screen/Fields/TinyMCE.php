@@ -9,50 +9,43 @@ use Orchid\Screen\Field;
 /**
  * Class TinyMCE.
  *
- * @method self accept($value = true)
- * @method self accesskey($value = true)
- * @method self autocomplete($value = true)
- * @method self autofocus($value = true)
- * @method self checked($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self formaction($value = true)
- * @method self formenctype($value = true)
- * @method self formmethod($value = true)
- * @method self formnovalidate($value = true)
- * @method self formtarget($value = true)
- * @method self list($value = true)
- * @method self max(int $value)
- * @method self maxlength(int $value)
- * @method self min(int $value)
- * @method self name(string $value)
- * @method self pattern($value = true)
- * @method self placeholder(string $value = null)
- * @method self readonly($value = true)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self src($value = true)
- * @method self step($value = true)
- * @method self tabindex($value = true)
- * @method self type($value = true)
- * @method self value($value = true)
- * @method self help(string $value = null)
- * @method self popover(string $value = null)
- * @method self height($value = '300px')
+ * @deprecated
+ *
+ * @method TinyMCE accesskey($value = true)
+ * @method TinyMCE autocomplete($value = true)
+ * @method TinyMCE autofocus($value = true)
+ * @method TinyMCE disabled($value = true)
+ * @method TinyMCE form($value = true)
+ * @method TinyMCE formaction($value = true)
+ * @method TinyMCE formenctype($value = true)
+ * @method TinyMCE formmethod($value = true)
+ * @method TinyMCE formnovalidate($value = true)
+ * @method TinyMCE formtarget($value = true)
+ * @method TinyMCE name(string $value = null)
+ * @method TinyMCE placeholder(string $value = null)
+ * @method TinyMCE readonly($value = true)
+ * @method TinyMCE required(bool $value = true)
+ * @method TinyMCE tabindex($value = true)
+ * @method TinyMCE value($value = true)
+ * @method TinyMCE theme(string $theme = null)
+ * @method TinyMCE help(string $value = null)
+ * @method TinyMCE popover(string $value = null)
+ * @method TinyMCE height($value = '300px')
+ * @method TinyMCE title(string $value = null)
  */
 class TinyMCE extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.tinymce';
+    protected $view = 'platform::fields.tinymce';
 
     /**
      * All attributes that are available to the field.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'value'  => null,
         'height' => '300px',
     ];
@@ -62,7 +55,7 @@ class TinyMCE extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
+    protected $inlineAttributes = [
         'accept',
         'accesskey',
         'autocomplete',

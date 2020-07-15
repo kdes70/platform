@@ -1,9 +1,9 @@
-@component($typeForm,get_defined_vars())
+@component($typeForm, get_defined_vars())
     <div data-controller="fields--map"
          data-fields--map-id="{{$id}}"
          data-fields--map-zoom="{{$zoom}}"
     >
-        <div id="{{$id}}" class="osmap-map b m-b w-full" style="min-height: {{ $attributes['height'] }}">
+        <div id="{{$id}}" class="osmap-map border m-b w-100" style="min-height: {{ $attributes['height'] }}">
 
         </div>
         <div class="row mt-3">
@@ -26,16 +26,16 @@
                        name="{{$name}}[lng]"
                        value="{{ $value['lng'] ?? '' }}"/>
             </div>
-        </div>
-        <div class="row mt-3">
             <div class="col-md">
                 <label>{{ __('Object search') }}</label>
                 <input class="form-control" type="text"
                        value="{{$valuename ?? ''}}"
                        data-target="fields--map.search"
                        data-action="keyup->fields--map#search"/>
-                <div id="marker__results"></div>
             </div>
         </div>
+
+        <div class="marker-results"></div>
+
     </div>
 @endcomponent

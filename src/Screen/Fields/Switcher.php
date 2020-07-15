@@ -9,50 +9,40 @@ use Orchid\Screen\Field;
 /**
  * Class Switcher.
  *
- * @method self accept($value = true)
- * @method self accesskey($value = true)
- * @method self autocomplete($value = true)
- * @method self autofocus($value = true)
- * @method self checked($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self formaction($value = true)
- * @method self formenctype($value = true)
- * @method self formmethod($value = true)
- * @method self formnovalidate($value = true)
- * @method self formtarget($value = true)
- * @method self list($value = true)
- * @method self max(int $value)
- * @method self maxlength(int $value)
- * @method self min(int $value)
- * @method self multiple($value = true)
- * @method self name(string $value)
- * @method self pattern($value = true)
- * @method self placeholder(string $value = null)
- * @method self readonly($value = true)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self src($value = true)
- * @method self step($value = true)
- * @method self tabindex($value = true)
- * @method self value($value = true)
- * @method self type($value = true)
- * @method self help(string $value = null)
- * @method self sendTrueOrFalse($value = true)
+ * @method Switcher accesskey($value = true)
+ * @method Switcher autocomplete($value = true)
+ * @method Switcher autofocus($value = true)
+ * @method Switcher checked($value = true)
+ * @method Switcher disabled($value = true)
+ * @method Switcher form($value = true)
+ * @method Switcher formaction($value = true)
+ * @method Switcher formenctype($value = true)
+ * @method Switcher formmethod($value = true)
+ * @method Switcher formnovalidate($value = true)
+ * @method Switcher formtarget($value = true)
+ * @method Switcher name(string $value = null)
+ * @method Switcher placeholder(string $value = null)
+ * @method Switcher readonly($value = true)
+ * @method Switcher required(bool $value = true)
+ * @method Switcher tabindex($value = true)
+ * @method Switcher value($value = true)
+ * @method Switcher help(string $value = null)
+ * @method Switcher sendTrueOrFalse($value = true)
+ * @method Switcher title(string $value = null)
  */
 class Switcher extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.switch';
+    protected $view = 'platform::fields.switch';
 
     /**
      * Default attributes value.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'type'     => 'checkbox',
         'class'    => 'custom-control-input',
         'value'    => false,
@@ -65,8 +55,7 @@ class Switcher extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
-        'accept',
+    protected $inlineAttributes = [
         'accesskey',
         'autocomplete',
         'autofocus',
@@ -78,19 +67,10 @@ class Switcher extends Field
         'formmethod',
         'formnovalidate',
         'formtarget',
-        'list',
-        'max',
-        'maxlength',
-        'min',
-        'multiple',
         'name',
-        'pattern',
         'placeholder',
         'readonly',
         'required',
-        'size',
-        'src',
-        'step',
         'tabindex',
         'value',
         'type',

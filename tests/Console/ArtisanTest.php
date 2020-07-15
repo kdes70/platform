@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Orchid\Tests\Console;
 
 use Orchid\Tests\TestConsoleCase;
-use Illuminate\Support\Facades\File;
 
 class ArtisanTest extends TestConsoleCase
 {
@@ -14,20 +13,6 @@ class ArtisanTest extends TestConsoleCase
      *
      * @var
      */
-    public function testArtisanOrchidEntityMany()
-    {
-        $this->artisan('orchid:entity-many', ['name' => $this->generateNameFromMethod()])
-            ->expectsOutput('Behavior created successfully.')
-            ->assertExitCode(0);
-    }
-
-    public function testArtisanOrchidEntitySingle()
-    {
-        $this->artisan('orchid:entity-single', ['name' => $this->generateNameFromMethod()])
-            ->expectsOutput('Behavior created successfully.')
-            ->assertExitCode(0);
-    }
-
     public function testArtisanOrchidChart()
     {
         $this->artisan('orchid:chart', ['name' => $this->generateNameFromMethod()])
@@ -77,6 +62,13 @@ class ArtisanTest extends TestConsoleCase
             ->assertExitCode(0);
     }
 
+    public function testArtisanOrchidListener()
+    {
+        $this->artisan('orchid:listener', ['name' => $this->generateNameFromMethod()])
+            ->expectsOutput('Listener created successfully.')
+            ->assertExitCode(0);
+    }
+
     public function testArtisanOrchidAdmin()
     {
         $this->artisan('orchid:admin')
@@ -95,20 +87,28 @@ class ArtisanTest extends TestConsoleCase
     public function testArtisanOrchidInstall()
     {
         $this->artisan('orchid:install')
-            ->expectsQuestion('The platform has already been installed, do you really want to repeat?', 'yes')
             ->expectsOutput("To start the embedded server, run 'artisan serve'");
     }
 
     public function testArtisanOrchidLink()
     {
-        $resources = public_path('resources');
-
-        File::deleteDirectory($resources);
-
         $this->artisan('orchid:link')
-            ->expectsOutput("The [$resources] directory has been linked.");
+            ->expectsOutput('Links have been created.');
+    }
 
-        $this->artisan('orchid:link')
-            ->expectsOutput("The [$resources] directory already exists.");
+    public function testArtisanPresetOrchidSource()
+    {
+        $this->artisan('ui', ['type' => 'orchid-source'])
+            ->expectsOutput('Please run "npm install && npm run dev" to compile your fresh scaffolding.')
+            ->expectsOutput('Orchid scaffolding installed successfully.');
+    }
+
+    public function testArtisanPresetOrchid()
+    {
+        $this->artisan('ui', ['type' => 'orchid'])
+            ->expectsOutput('Please run "npm install && npm run dev" to compile your fresh scaffolding.')
+            ->expectsOutput("After that, You need to add this line to AppServiceProvider's register method:")
+            ->expectsOutput("app(\Orchid\Platform\Dashboard::class)->registerResource('scripts','/js/dashboard.js');")
+            ->expectsOutput('Orchid scaffolding installed successfully.');
     }
 }

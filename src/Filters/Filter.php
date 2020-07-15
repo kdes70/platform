@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Orchid\Filters;
 
-use Orchid\Screen\Field;
-use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Orchid\Screen\Field;
 
 abstract class Filter
 {
@@ -16,7 +16,7 @@ abstract class Filter
     public $request;
 
     /**
-     * @var array
+     * @var null|array
      */
     public $parameters;
 
@@ -31,6 +31,13 @@ abstract class Filter
      * @var string
      */
     public $lang;
+
+    /**
+     * The value delimiter.
+     *
+     * @var string
+     */
+    protected static $delimiter = ',';
 
     /**
      * Filter constructor.
@@ -48,11 +55,11 @@ abstract class Filter
      */
     public function filter(Builder $builder): Builder
     {
-        if (is_null($this->parameters) || $this->request->filled($this->parameters)) {
-            return $this->run($builder);
-        }
+        $when = empty($this->parameters) || $this->request->hasAny($this->parameters);
 
-        return $builder;
+        return $builder->when($when, function (Builder $builder) {
+            return $this->run($builder);
+        });
     }
 
     /**
@@ -63,10 +70,62 @@ abstract class Filter
     abstract public function run(Builder $builder): Builder;
 
     /**
-     * @return Field|null
+     * @return Field[]
      */
-    public function display() : ?Field
+    public function display(): array
     {
-        //
+        // return any Field
+    }
+
+    /**
+     * @return string
+     */
+    abstract public function name(): string;
+
+    /**
+     * @return string
+     */
+    public function render(): string
+    {
+        return collect($this->display())->reduce(static function ($html, Field $field) {
+            return $html.$field->form('filters')->render();
+        });
+    }
+
+    /**
+     * @return int
+     */
+    public function count(): int
+    {
+        return count($this->display());
+    }
+
+    /**
+     * @return bool
+     */
+    public function isApply(): bool
+    {
+        return count($this->request->only($this->parameters, [])) > 0;
+    }
+
+    /**
+     * @return string
+     */
+    public function value(): string
+    {
+        $params = $this->request->only($this->parameters, []);
+        $values = collect($params)->flatten()->implode(static::$delimiter);
+
+        return $this->name().': '.$values;
+    }
+
+    /**
+     * @return string
+     */
+    public function resetLink(): string
+    {
+        $params = http_build_query($this->request->except($this->parameters));
+
+        return url($this->request->url().'?'.$params);
     }
 }

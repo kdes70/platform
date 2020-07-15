@@ -4,18 +4,25 @@ declare(strict_types=1);
 
 namespace Orchid\Attachment\Models;
 
+use Exception;
+use Illuminate\Contracts\Filesystem\Cloud;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Mimey\MimeTypes;
+use Orchid\Filters\Filterable;
 use Orchid\Platform\Dashboard;
 use Orchid\Platform\Models\User;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Class Attachment.
  */
 class Attachment extends Model
 {
+    use Filterable;
+
     /**
      * @var array
      */
@@ -40,10 +47,40 @@ class Attachment extends Model
      */
     protected $appends = [
         'url',
+        'relativeUrl',
     ];
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @var array
+     */
+    protected $casts = [
+        'sort' => 'integer',
+    ];
+
+    /**
+     * @var array
+     */
+    protected $allowedFilters = [
+        'name',
+        'original_name',
+        'mime',
+        'extension',
+        'disk',
+    ];
+
+    /**
+     * @var array
+     */
+    protected $allowedSorts = [
+        'name',
+        'original_name',
+        'mime',
+        'extension',
+        'disk',
+    ];
+
+    /**
+     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -55,44 +92,74 @@ class Attachment extends Model
      *
      * @param string $default
      *
-     * @return string
+     * @return string|null
      */
-    public function url($default = null): ?string
+    public function url(string $default = null): ?string
     {
-        $disk = $this->getAttribute('disk');
+        /** @var Filesystem|Cloud $disk */
+        $disk = Storage::disk($this->getAttribute('disk'));
+        $path = $this->physicalPath();
 
-        if (Storage::disk($disk)->exists($this->physicalPath())) {
-            return Storage::disk($disk)->url($this->physicalPath());
-        }
-
-        return $default;
+        return $disk->exists($path) && $path !== null
+            ? $disk->url($path)
+            : $default;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getUrlAttribute()
+    public function getUrlAttribute(): ?string
     {
         return $this->url();
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function physicalPath(): string
+    public function getRelativeUrlAttribute(): ?string
     {
+        $url = $this->url();
+
+        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        return parse_url($url, PHP_URL_PATH);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getTitleAttribute(): ?string
+    {
+        if ($this->original_name !== 'blob') {
+            return $this->original_name;
+        }
+
+        return $this->name.'.'.$this->extension;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function physicalPath(): ?string
+    {
+        if ($this->path === null || $this->name === null) {
+            return null;
+        }
+
         return $this->path.$this->name.'.'.$this->extension;
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      *
      * @return bool|null
      */
     public function delete()
     {
         if ($this->exists) {
-            if (self::where('hash', $this->hash)->where('disk', $this->disk)->count() <= 1) {
+            if (static::where('hash', $this->hash)->where('disk', $this->disk)->count() <= 1) {
                 //Physical removal of all copies of a file.
                 Storage::disk($this->disk)->delete($this->physicalPath());
             }
@@ -103,7 +170,7 @@ class Attachment extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function relationships()
     {

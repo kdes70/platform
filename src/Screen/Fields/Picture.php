@@ -4,86 +4,89 @@ declare(strict_types=1);
 
 namespace Orchid\Screen\Fields;
 
+use Orchid\Attachment\Models\Attachment;
+use Orchid\Platform\Dashboard;
 use Orchid\Screen\Field;
+use Orchid\Support\Init;
 
 /**
  * Class Picture.
  *
- * @method self accept($value = true)
- * @method self accesskey($value = true)
- * @method self autocomplete($value = true)
- * @method self autofocus($value = true)
- * @method self checked($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self formaction($value = true)
- * @method self formenctype($value = true)
- * @method self formmethod($value = true)
- * @method self formnovalidate($value = true)
- * @method self formtarget($value = true)
- * @method self list($value = true)
- * @method self max(int $value)
- * @method self maxlength(int $value)
- * @method self min(int $value)
- * @method self multiple($value = true)
- * @method self name(string $value)
- * @method self pattern($value = true)
- * @method self placeholder(string $value = null)
- * @method self readonly($value = true)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self src($value = true)
- * @method self step($value = true)
- * @method self tabindex($value = true)
- * @method self type($value = true)
- * @method self value($value = true)
- * @method self help(string $value = null)
- * @method self width($value = true)
- * @method self height($value = true)
- * @method self popover(string $value = null)
+ * @method Picture name(string $value = null)
+ * @method Picture required(bool $value = true)
+ * @method Picture size($value = true)
+ * @method Picture src($value = true)
+ * @method Picture value($value = true)
+ * @method Picture help(string $value = null)
+ * @method Picture popover(string $value = null)
+ * @method Picture title(string $value = null)
+ * @method Picture maxFileSize($value = true)
+ * @method Picture storage($value = null)
  */
 class Picture extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.picture';
+    protected $view = 'platform::fields.picture';
+
+    /**
+     * Default attributes value.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'value'       => null,
+        'target'      => 'url',
+        'url'         => null,
+        'maxFileSize' => null,
+    ];
 
     /**
      * Attributes available for a particular tag.
      *
      * @var array
      */
-    public $inlineAttributes = [
-        'accept',
-        'accesskey',
-        'autocomplete',
-        'autofocus',
-        'checked',
-        'disabled',
+    protected $inlineAttributes = [
         'form',
         'formaction',
         'formenctype',
         'formmethod',
         'formnovalidate',
         'formtarget',
-        'list',
-        'max',
-        'maxlength',
-        'min',
-        'multiple',
         'name',
-        'pattern',
         'placeholder',
         'readonly',
         'required',
-        'size',
-        'src',
-        'step',
         'tabindex',
-        'type',
         'value',
+        'target',
+        'url',
     ];
+
+    /**
+     * Picture constructor.
+     */
+    public function __construct()
+    {
+        // Set max file size
+        $this->addBeforeRender(function () {
+            $maxFileSize = $this->get('maxFileSize');
+
+            $serverMaxFileSize = Init::maxFileUpload(Init::MB);
+
+            if ($maxFileSize === null) {
+                $this->set('maxFileSize', $serverMaxFileSize);
+
+                return;
+            }
+
+            throw_if(
+                $maxFileSize > $serverMaxFileSize,
+                \RuntimeException::class,
+                'Cannot set the desired maximum file size. This contradicts the settings specified in .ini');
+        });
+    }
 
     /**
      * @param string|null $name
@@ -93,5 +96,57 @@ class Picture extends Field
     public static function make(string $name = null): self
     {
         return (new static())->name($name);
+    }
+
+    /**
+     * The stored value will be in the form
+     * of id attachment.
+     *
+     * @return self
+     */
+    public function targetId(): self
+    {
+        $this->set('target', 'id');
+
+        return $this->addBeforeRender(function () {
+            $value = (string) $this->get('value');
+
+            if (! ctype_digit($value)) {
+                return;
+            }
+
+            /** @var Attachment $attach */
+            $attach = Dashboard::model(Attachment::class);
+
+            $url = optional($attach::find($value))->url();
+
+            $this->set('url', $url);
+        });
+    }
+
+    /**
+     * The saved value will be in the form
+     * of a full address before the file.
+     *
+     * @return self
+     */
+    public function targetUrl(): self
+    {
+        $this->set('target', 'url');
+
+        return $this;
+    }
+
+    /**
+     * The saved value will be in the form
+     * of a relative address before the file.
+     *
+     * @return self
+     */
+    public function targetRelativeUrl(): self
+    {
+        $this->set('target', 'relativeUrl');
+
+        return $this;
     }
 }

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Orchid\Filters;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class HttpFilter
 {
@@ -15,20 +17,23 @@ class HttpFilter
      * Column names are alphanumeric strings that can contain
      * underscores (`_`) but can't start with a number.
      */
-    private const VALID_COLUMN_NAME_REGEX = '/^(?![0-9])[A-Za-z0-9_>-]*$/';
+    private const VALID_COLUMN_NAME_REGEX = '/^(?![\d])[A-Za-z0-9_>-]*$/';
 
     /**
      * @var Request
      */
     protected $request;
+
     /**
      * @var Collection
      */
     protected $filters;
+
     /**
      * @var Collection
      */
     protected $sorts;
+
     /**
      * Model options and allowed params.
      *
@@ -52,12 +57,16 @@ class HttpFilter
     }
 
     /**
-     * @param string $query
+     * @param string|null $query
      *
-     * @return string|array
+     * @return string|array|null
      */
     protected function parseHttpValue($query)
     {
+        if ($query === null) {
+            return $query;
+        }
+
         $item = explode(',', $query);
 
         if (count($item) > 1) {
@@ -74,9 +83,7 @@ class HttpFilter
      */
     public static function sanitize(string $column): string
     {
-        if (! preg_match(self::VALID_COLUMN_NAME_REGEX, $column)) {
-            abort(Response::HTTP_BAD_REQUEST);
-        }
+        abort_unless(preg_match(self::VALID_COLUMN_NAME_REGEX, $column), Response::HTTP_BAD_REQUEST);
 
         return $column;
     }
@@ -117,14 +124,14 @@ class HttpFilter
 
     /**
      * @param Builder $query
-     * @param         $value
+     * @param mixed   $value
      * @param string  $property
      *
      * @return Builder
      */
-    protected function filtersExact(Builder $query, $value, string $property)
+    protected function filtersExact(Builder $query, $value, string $property): Builder
     {
-        $property = $this->sanitize($property);
+        $property = self::sanitize($property);
 
         if (is_array($value)) {
             return $query->whereIn($property, $value);
@@ -148,9 +155,10 @@ class HttpFilter
             ->each(function (string $sort) use ($builder, $allowedSorts) {
                 $descending = strpos($sort, '-') === 0;
                 $key = ltrim($sort, '-');
+                $property = Str::before($key, '.');
                 $key = str_replace('.', '->', $key);
 
-                if (in_array($key, $allowedSorts, true)) {
+                if (in_array($property, $allowedSorts, true)) {
                     $key = $this->sanitize($key);
                     $builder->orderBy($key, $descending ? 'desc' : 'asc');
                 }
@@ -158,13 +166,13 @@ class HttpFilter
     }
 
     /**
-     * @param null $property
+     * @param null|string $property
      *
      * @return bool
      */
-    public function isSort($property = null)
+    public function isSort(string $property = null): bool
     {
-        if (is_null($property)) {
+        if ($property === null) {
             return $this->sorts->isEmpty();
         }
 
@@ -180,40 +188,36 @@ class HttpFilter
     }
 
     /**
-     * @param $property
-     *
-     * @return mixed
-     */
-    public function revertSort($property)
-    {
-        if ($this->getSort($property) === 'asc') {
-            return '-'.$property;
-        }
-
-        return $property;
-    }
-
-    /**
-     * @param $property
+     * @param string $property
      *
      * @return string
      */
-    public function getSort($property)
+    public function revertSort(string $property): string
     {
-        if ($this->sorts->search($property, true) !== false) {
-            return 'asc';
-        }
-
-        return 'desc';
+        return $this->getSort($property) === 'asc'
+            ? '-'.$property
+            : $property;
     }
 
     /**
-     * @param $property
+     * @param string $property
+     *
+     * @return string
+     */
+    public function getSort(string $property): string
+    {
+        return $this->sorts->search($property, true) !== false
+            ? 'asc'
+            : 'desc';
+    }
+
+    /**
+     * @param string $property
      *
      * @return mixed
      */
-    public function getFilter($property)
+    public function getFilter(string $property)
     {
-        return array_get($this->filters, $property);
+        return Arr::get($this->filters, $property);
     }
 }

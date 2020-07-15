@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Orchid\Tests\Feature\Platform;
 
 use Illuminate\Http\UploadedFile;
+use Orchid\Attachment\Models\Attachment;
 use Orchid\Tests\TestFeatureCase;
 
 class AttachmentTest extends TestFeatureCase
@@ -51,7 +52,7 @@ class AttachmentTest extends TestFeatureCase
 
     public function testAttachmentHttpDestroy()
     {
-        /** @var $response \Illuminate\Foundation\Testing\TestResponse */
+        /** @var $response \Illuminate\Testing\TestResponse */
         $response = $this
             ->actingAs($this->createAdminUser())
             ->post(route('platform.systems.files.upload'), [
@@ -70,7 +71,7 @@ class AttachmentTest extends TestFeatureCase
 
     public function testAttachmentHttpGetFile()
     {
-        /** @var $response \Illuminate\Foundation\Testing\TestResponse */
+        /** @var $response \Illuminate\Testing\TestResponse */
         $response = $this
             ->actingAs($this->createAdminUser())
             ->post(route('platform.systems.files.upload'), [
@@ -97,7 +98,7 @@ class AttachmentTest extends TestFeatureCase
 
     public function testAttachmentHttpUpdate()
     {
-        /** @var $response \Illuminate\Foundation\Testing\TestResponse */
+        /** @var $response \Illuminate\Testing\TestResponse */
         $response = $this
             ->actingAs($this->createAdminUser())
             ->post(route('platform.systems.files.upload'), [
@@ -122,5 +123,43 @@ class AttachmentTest extends TestFeatureCase
                 'description' => 'New description',
                 'alt'         => 'New alt',
             ]);
+    }
+
+    public function testAttachmentHttpSort()
+    {
+        $response = $this
+            ->actingAs($this->createAdminUser())
+            ->post(route('platform.systems.files.upload'), [
+                'files' => [
+                    UploadedFile::fake()->image('first.jpg'),
+                    UploadedFile::fake()->image('second.png'),
+                ],
+            ]);
+
+        $attachments = $response->decodeResponseJson();
+
+        $originalFiles = [];
+        $files = [];
+
+        foreach ($attachments as $attachment) {
+            $files[] = $originalFiles[] = $attachment['id'];
+        }
+
+        arsort($originalFiles);
+        $sort = array_flip($files);
+
+        $response = $this
+            ->actingAs($this->createAdminUser())
+            ->post(route('platform.systems.files.sort'), [
+                'files' => $sort,
+            ]);
+
+        $response->isOk();
+
+        $attachments = Attachment::whereIn('id', $originalFiles)
+            ->pluck('sort', 'id')
+            ->toArray();
+
+        $this->assertEquals($sort, $attachments);
     }
 }

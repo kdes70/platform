@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Orchid\Layouts\Examples;
 
 use Orchid\Screen\Layouts\Chart;
@@ -9,12 +11,12 @@ class ChartPieExample extends Chart
     /**
      * @var string
      */
-    public $title = 'Pie Chart';
+    protected $title = 'Pie Chart';
 
     /**
      * @var int
      */
-    public $height = 250;
+    protected $height = 350;
 
     /**
      * Available options:
@@ -23,12 +25,12 @@ class ChartPieExample extends Chart
      *
      * @var string
      */
-    public $type = 'pie';
+    protected $type = 'pie';
 
     /**
      * @var array
      */
-    public $labels = [
+    protected $labels = [
         '12am-3am',
         '3am-6am',
         '6am-9am',
@@ -41,5 +43,5 @@ class ChartPieExample extends Chart
     /**
      * @var string
      */
-    public $data = 'charts';
+    protected $target = 'charts';
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Orchid\Platform\Commands;
 
 use Illuminate\Console\GeneratorCommand;
+use Orchid\Platform\Dashboard;
 
 class ScreenCommand extends GeneratorCommand
 {
@@ -36,7 +37,7 @@ class ScreenCommand extends GeneratorCommand
      */
     protected function getStub(): string
     {
-        return PLATFORM_PATH.'/resources/stubs/screen.stub';
+        return Dashboard::path('resources/stubs/screen.stub');
     }
 
     /**

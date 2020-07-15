@@ -4,38 +4,41 @@ declare(strict_types=1);
 
 namespace Orchid\Screen\Fields;
 
-use Orchid\Screen\Field;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Orchid\Screen\Field;
 
 /**
  * Class Select.
  *
- * @method self accesskey($value = true)
- * @method self autofocus($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self name(string $value)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self tabindex($value = true)
- * @method self help(string $value = null)
- * @method self popover(string $value = null)
+ * @method Select accesskey($value = true)
+ * @method Select autofocus($value = true)
+ * @method Select disabled($value = true)
+ * @method Select form($value = true)
+ * @method Select name(string $value = null)
+ * @method Select required(bool $value = true)
+ * @method Select size($value = true)
+ * @method Select tabindex($value = true)
+ * @method Select help(string $value = null)
+ * @method Select popover(string $value = null)
+ * @method Select options($value = null)
+ * @method Select title(string $value = null)
  */
 class Select extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.select';
+    protected $view = 'platform::fields.select';
 
     /**
      * Default attributes value.
      *
      * @var array
      */
-    public $attributes = [
-        'class' => 'form-control',
+    protected $attributes = [
+        'class'   => 'form-control',
+        'options' => [],
     ];
 
     /**
@@ -43,7 +46,7 @@ class Select extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
+    protected $inlineAttributes = [
         'accesskey',
         'autofocus',
         'disabled',
@@ -98,18 +101,18 @@ class Select extends Field
      *
      * @return self
      */
-    private function setFromEloquent($model, string $name, string $key)
+    private function setFromEloquent($model, string $name, string $key): self
     {
         $options = $model->pluck($name, $key);
 
         $this->set('options', $options);
 
-        $this->addBeforeRender(function () {
+        return $this->addBeforeRender(function () use ($name) {
             $value = [];
 
-            collect($this->get('value'))->each(function ($item) use (&$value) {
+            collect($this->get('value'))->each(static function ($item) use (&$value, $name) {
                 if (is_object($item)) {
-                    $value[$item->id] = $item->name;
+                    $value[$item->id] = $item->$name;
                 } else {
                     $value[] = $item;
                 }
@@ -117,8 +120,6 @@ class Select extends Field
 
             $this->set('value', $value);
         });
-
-        return $this;
     }
 
     /**
@@ -132,6 +133,27 @@ class Select extends Field
     {
         $key = $key ?? $builder->getModel()->getKeyName();
 
-        return $this->setFromEloquent($builder, $name, $key);
+        return $this->setFromEloquent($builder->get(), $name, $key);
+    }
+
+    /**
+     * @param string $name
+     * @param string $key
+     *
+     * @return self
+     */
+    public function empty(string $name = '', string $key = ''): self
+    {
+        return $this->addBeforeRender(function () use ($name, $key) {
+            $options = $this->get('options', []);
+
+            if (! is_array($options)) {
+                $options = $options->toArray();
+            }
+
+            $value = [$key => $name] + $options;
+
+            $this->set('options', $value);
+        });
     }
 }

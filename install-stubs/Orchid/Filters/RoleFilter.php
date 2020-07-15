@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Orchid\Filters;
 
-use Orchid\Screen\Field;
+use Illuminate\Database\Eloquent\Builder;
 use Orchid\Filters\Filter;
 use Orchid\Platform\Models\Role;
+use Orchid\Screen\Field;
 use Orchid\Screen\Fields\Select;
-use Illuminate\Database\Eloquent\Builder;
 
 class RoleFilter extends Filter
 {
@@ -20,38 +20,36 @@ class RoleFilter extends Filter
     ];
 
     /**
-     * @var bool
+     * @return string
      */
-    public $dashboard = true;
+    public function name(): string
+    {
+        return __('Roles');
+    }
 
     /**
      * @param Builder $builder
      *
      * @return Builder
      */
-    public function run(Builder $builder) : Builder
+    public function run(Builder $builder): Builder
     {
-        return $builder->whereHas('roles', function ($query) {
+        return $builder->whereHas('roles', function (Builder $query) {
             $query->where('slug', $this->request->get('role'));
         });
     }
 
     /**
-     * @return Field|null
+     * @return Field[]
      */
-    public function display() : ?Field
+    public function display(): array
     {
-        return Select::make('role')
-            ->options($this->getRoles())
-            ->value($this->request->get('role'))
-            ->title(__('Roles'));
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getRoles()
-    {
-        return Role::select('slug', 'name')->pluck('name', 'slug');
+        return [
+            Select::make('role')
+                ->fromModel(Role::class, 'slug', 'slug')
+                ->empty()
+                ->value($this->request->get('role'))
+                ->title(__('Roles')),
+        ];
     }
 }

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Orchid\Filters;
 
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Orchid\Screen\Layouts\Selection;
 
 trait Filterable
 {
     /**
+     * Apply the filter to the given query.
+     *
      * @param Builder $query
      * @param array   $filters
      *
@@ -17,15 +20,33 @@ trait Filterable
      */
     public function scopeFiltersApply(Builder $query, array $filters = []): Builder
     {
-        foreach ($filters as $filter) {
-            if (! is_object($filter)) {
-                $filter = app()->make($filter);
-            }
+        return collect($filters)
+            ->map(function ($filter) {
+                return is_object($filter) ? $filter : app()->make($filter);
+            })
+            ->reduce(function (Builder $query, Filter $filter) {
+                return $filter->filter($query);
+            }, $query);
+    }
 
-            $query = $filter->filter($query);
-        }
+    /**
+     * Apply the filter to the given selection.
+     *
+     * @param Builder          $query
+     * @param string|Selection $selection
+     *
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     *
+     * @return Builder
+     */
+    public function scopeFiltersApplySelection(Builder $query, $selection): Builder
+    {
+        /** @var Selection $selection */
+        $selection = is_object($selection) ? $selection : app()->make($selection);
 
-        return $query;
+        $filters = $selection->filters();
+
+        return $this->scopeFiltersApply($query, $filters);
     }
 
     /**
@@ -34,7 +55,7 @@ trait Filterable
      *
      * @return Builder
      */
-    public function scopeFilters(Builder $builder, HttpFilter $httpFilter = null)
+    public function scopeFilters(Builder $builder, HttpFilter $httpFilter = null): Builder
     {
         $filter = $httpFilter ?? new HttpFilter();
         $filter->build($builder);
@@ -51,7 +72,7 @@ trait Filterable
      */
     public function scopeDefaultSort(Builder $builder, string $column, string $direction = 'asc')
     {
-        if (is_null($builder->getQuery()->orders)) {
+        if (empty($builder->getQuery()->orders)) {
             $builder->orderBy($column, $direction);
         }
 
@@ -59,7 +80,7 @@ trait Filterable
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function getOptionsFilter(): Collection
     {

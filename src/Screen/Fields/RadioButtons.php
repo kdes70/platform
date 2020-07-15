@@ -9,30 +9,32 @@ use Orchid\Screen\Field;
 /**
  * Class RadioButtons.
  *
- * @method self accesskey($value = true)
- * @method self autofocus($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self name(string $value)
- * @method self required(bool $value = true)
- * @method self size($value = true)
- * @method self tabindex($value = true)
- * @method self help(string $value = null)
- * @method self popover(string $value = null)
+ * @method RadioButtons accesskey($value = true)
+ * @method RadioButtons autofocus($value = true)
+ * @method RadioButtons disabled($value = true)
+ * @method RadioButtons form($value = true)
+ * @method RadioButtons name(string $value = null)
+ * @method RadioButtons required(bool $value = true)
+ * @method RadioButtons size($value = true)
+ * @method RadioButtons tabindex($value = true)
+ * @method RadioButtons help(string $value = null)
+ * @method RadioButtons popover(string $value = null)
+ * @method RadioButtons title(string $value = null)
+ * @method RadioButtons options(array $value = [])
  */
 class RadioButtons extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.radiobutton';
+    protected $view = 'platform::fields.radiobutton';
 
     /**
      * Default attributes value.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'type' => 'radio',
     ];
 
@@ -41,7 +43,7 @@ class RadioButtons extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
+    protected $inlineAttributes = [
         'accesskey',
         'autofocus',
         'disabled',
@@ -61,6 +63,16 @@ class RadioButtons extends Field
      */
     public static function make(string $name = null): self
     {
-        return (new static())->name($name);
+        return (new static())->name($name)->declarateActive();
+    }
+
+    /**
+     * @return RadioButtons
+     */
+    public function declarateActive(): self
+    {
+        return $this->set('active', function (string $key, string $value = null) {
+            return $key === $value;
+        });
     }
 }

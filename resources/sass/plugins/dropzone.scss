@@ -10,19 +10,31 @@
   padding:    10px 0 0;
 
   .dz-preview {
+    @extend .bg-white;
     margin: 0.5rem;
+    float: left;
+
+    .dz-details{
+        background-color: inherit;
+        height: 100%;
+        @extend .border;
+        border-radius: $border-radius-base * 2 !important;
+        @extend .bg-light;
+    }
 
     .dz-image {
-      width: 8em;
+      max-width: 100%;
       height: 8em;
-      @extend .img-rounded;
+      border: none;
+      @extend .r-2x;
 
       img {
-        object-fit: cover;
-        width:      100%;
-        height:     100%;
-        @extend .b;
-        @extend .box-shadow;
+          object-fit: cover;
+          width: 100%;
+          height: 100%;
+          @extend .border;
+          border-radius: $border-radius-base * 2 !important;
+          @extend .bg-light;
       }
     }
 
@@ -97,4 +109,21 @@
 
   }
 
+  .dz-message {
+    margin: 0.5rem;
+  }
+
+    .media {
+        &-item {
+            cursor: pointer;
+
+            * {
+                cursor: pointer;
+            }
+        }
+    }
+
+    .dz-clickable .btn:hover, .modal button:hover {
+        cursor: pointer;
+    }
 }

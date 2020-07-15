@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Orchid\Setting;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class Setting.
+ *
+ * @deprecated
  */
 class Setting extends Model
 {
+    public const CACHE_PREFIX = 'settings-';
+
     /**
      * @var bool
      */
@@ -79,14 +83,15 @@ class Setting extends Model
     private function cacheForget($key)
     {
         foreach (Arr::wrap($key) as $value) {
-            Cache::forget($value);
+            Cache::forget(self::CACHE_PREFIX.$value);
         }
     }
 
     /**
+     * Get values.
+     *
      * @param string|array $key
-     * @param string|null  $default
-     *                              Get values
+     * @param mixed        $default
      *
      * @return mixed
      */
@@ -96,7 +101,9 @@ class Setting extends Model
             return $this->getNoCache($key, $default);
         }
 
-        return Cache::rememberForever('settings-'.implode(',', (array) $key), function () use ($key, $default) {
+        $cacheKey = self::CACHE_PREFIX.implode(',', (array) $key);
+
+        return Cache::rememberForever($cacheKey, function () use ($key, $default) {
             return $this->getNoCache($key, $default);
         });
     }
@@ -110,10 +117,7 @@ class Setting extends Model
     public function getNoCache($key, $default = null)
     {
         if (is_array($key)) {
-            $result = $this->select('key', 'value')
-                ->whereIn('key', $key)
-                ->pluck('value', 'key')
-                ->toArray();
+            $result = $this->select('key', 'value')->whereIn('key', $key)->pluck('value', 'key')->toArray();
 
             return empty($result) ? $default : $result;
         }

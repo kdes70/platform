@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Orchid\Screens\User;
 
-use Orchid\Screen\Layout;
-use Orchid\Screen\Screen;
+use App\Orchid\Layouts\User\UserEditLayout;
+use App\Orchid\Layouts\User\UserFiltersLayout;
+use App\Orchid\Layouts\User\UserListLayout;
 use Illuminate\Http\Request;
 use Orchid\Platform\Models\User;
-use Orchid\Support\Facades\Alert;
-use App\Orchid\Filters\RoleFilter;
-use App\Orchid\Layouts\User\UserEditLayout;
-use App\Orchid\Layouts\User\UserListLayout;
-use App\Orchid\Layouts\User\UserFiltersLayout;
+use Orchid\Screen\Layout;
+use Orchid\Screen\Screen;
+use Orchid\Support\Facades\Toast;
 
 class UserListScreen extends Screen
 {
@@ -31,15 +30,21 @@ class UserListScreen extends Screen
     public $description = 'All registered users';
 
     /**
+     * @var string
+     */
+    public $permission = 'platform.systems.users';
+
+    /**
      * Query data.
      *
      * @return array
      */
-    public function query() : array
+    public function query(): array
     {
-        return  [
-            'users'  => User::with('roles')
-                ->filtersApply([RoleFilter::class])
+        return [
+            'users' => User::with('roles')
+                ->filters()
+                ->filtersApplySelection(UserFiltersLayout::class)
                 ->defaultSort('id', 'desc')
                 ->paginate(),
         ];
@@ -48,9 +53,9 @@ class UserListScreen extends Screen
     /**
      * Button commands.
      *
-     * @return array
+     * @return Action[]
      */
-    public function commandBar() : array
+    public function commandBar(): array
     {
         return [];
     }
@@ -58,18 +63,16 @@ class UserListScreen extends Screen
     /**
      * Views.
      *
-     * @return array
+     * @return Layout[]
      */
-    public function layout() : array
+    public function layout(): array
     {
         return [
             UserFiltersLayout::class,
             UserListLayout::class,
 
-            Layout::modals([
-                'oneAsyncModal' => [
-                    UserEditLayout::class,
-                ],
+            Layout::modal('oneAsyncModal', [
+                UserEditLayout::class,
             ])->async('asyncGetUser'),
         ];
     }
@@ -79,7 +82,7 @@ class UserListScreen extends Screen
      *
      * @return array
      */
-    public function asyncGetUser(User $user) : array
+    public function asyncGetUser(User $user): array
     {
         return [
             'user' => $user,
@@ -94,10 +97,30 @@ class UserListScreen extends Screen
      */
     public function saveUser(User $user, Request $request)
     {
+        $request->validate([
+            'user.email' => 'required|unique:users,email,'.$user->id,
+        ]);
+
         $user->fill($request->get('user'))
+            ->replaceRoles($request->input('user.roles'))
             ->save();
 
-        Alert::info(__('User was saved.'));
+        Toast::info(__('User was saved.'));
+
+        return back();
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function remove(Request $request)
+    {
+        User::findOrFail($request->get('id'))
+            ->delete();
+
+        Toast::info(__('User was removed'));
 
         return back();
     }

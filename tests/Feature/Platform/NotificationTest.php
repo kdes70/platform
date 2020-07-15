@@ -4,56 +4,99 @@ declare(strict_types=1);
 
 namespace Orchid\Tests\Feature\Platform;
 
+use Orchid\Platform\Models\User;
+use Orchid\Platform\Notifications\DashboardMessage;
+use Orchid\Tests\App\Notifications\TaskCompleted;
 use Orchid\Tests\TestFeatureCase;
-use Orchid\Platform\Notifications\DashboardNotification;
 
 class NotificationTest extends TestFeatureCase
 {
     public function testViewNotification()
     {
-        $this->createNotification('Hello Test');
-
         $response = $this
-            ->actingAs($this->createAdminUser())
-            ->get(route('platform.main'));
+            ->actingAs($this->createNotifyUser())
+            ->get(route('platform.notifications'));
 
         $response
             ->assertOk()
-            ->assertSee('Hello Test');
+            ->assertSee('Task Completed');
     }
 
     public function testMaskAllAsRead()
     {
-        $this->createNotification('Mask all as read');
+        $user = $this->createNotifyUser();
 
-        $response = $this
-            ->actingAs($this->createAdminUser())
-            ->post(route('platform.notification.read'));
+        $this
+            ->actingAs($user)
+            ->post(route('platform.notifications', 'markAllAsRead'))
+            ->assertRedirect();
 
-        $response->assertDontSee('Mask all as read');
+        $this
+            ->actingAs($user)
+            ->get(route('platform.notifications'))
+            ->assertSee('All messages have been read.')
+            ->assertDontSee('Mask all as read');
     }
 
     public function testRemove()
     {
-        $this->createNotification('Test remove notification');
+        $user = $this->createNotifyUser();
 
+        $this
+            ->actingAs($user)
+            ->post(route('platform.notifications', 'removeAll'))
+            ->assertRedirect();
+
+        $this
+            ->actingAs($user)
+            ->get(route('platform.notifications'))
+            ->assertSee('All messages have been deleted.')
+            ->assertDontSee('Test remove notification')
+            ->assertDontSee('Task Completed');
+    }
+
+    public function testMaskReadNotification()
+    {
+        $user = $this->createNotifyUser();
+        $notification = $user
+            ->notifications()
+            ->where('type', DashboardMessage::class)
+            ->first();
+
+        $this->assertTrue($notification->unread());
+
+        $this
+            ->actingAs($user)
+            ->post(route('platform.notifications', [$notification->id, 'maskNotification']))
+            ->assertRedirect();
+
+        $notification = $notification->fresh();
+        $this->assertTrue($notification->read());
+    }
+
+    public function testShowAPIUnread()
+    {
         $response = $this
-            ->actingAs($this->createAdminUser())
-            ->post(route('platform.notification.remove'));
+            ->actingAs($this->createNotifyUser())
+            ->post(route('platform.api.notifications'));
 
-        $response->assertDontSee('Test remove notification');
+        $response
+            ->assertOk()
+            ->assertJsonFragment([
+                'type'    => 'info',
+                'title'   => 'Task Completed',
+                'message' => 'You have completed work. Well done!',
+            ]);
     }
 
     /**
-     * @param string $title
+     * @return User
      */
-    private function createNotification($title = 'test')
+    private function createNotifyUser(): User
     {
-        $this->createAdminUser()->notify(new DashboardNotification([
-            'title'   => $title,
-            'message' => 'New Test!',
-            'action'  => 'https://orchid.software',
-            'type'    => DashboardNotification::SUCCESS,
-        ]));
+        $user = $this->createAdminUser();
+        $user->notify(new TaskCompleted());
+
+        return $user;
     }
 }

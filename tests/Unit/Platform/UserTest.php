@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Orchid\Tests\Unit\Platform;
 
-use Orchid\Tests\TestUnitCase;
+use Illuminate\Support\Facades\Auth;
+use Orchid\Access\UserSwitch;
 use Orchid\Platform\Models\User;
+use Orchid\Tests\TestUnitCase;
 
 class UserTest extends TestUnitCase
 {
-    /**
-     * @test
-     */
     public function testHasCorrectInstance()
     {
         $user = factory(User::class)->create();
@@ -20,31 +19,45 @@ class UserTest extends TestUnitCase
         $this->assertInstanceOf(User::class, $user);
     }
 
-    /**
-     * @test
-     */
     public function testCanGetNameTitle()
     {
         $user = $this->createUser();
 
-        $this->assertEquals($user->name, $user->getNameTitle());
+        $this->assertEquals($user->name, $user->presenter()->title());
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return User
      */
     private function createUser()
     {
         return factory(User::class)->create();
     }
 
-    /**
-     * @test
-     */
     public function testCanGetSubTitle()
     {
         $user = $this->createUser();
 
-        $this->assertEquals('Administrator', $user->getSubTitle());
+        $this->assertEquals('Regular user', $user->presenter()->subTitle());
+    }
+
+    public function testLoginAs()
+    {
+        $user = $this->createUser();
+        $userSwitch = $this->createUser();
+
+        $this->assertFalse(UserSwitch::isSwitch());
+
+        $this->actingAs($user);
+        $this->assertEquals($user->id, Auth::id());
+
+        UserSwitch::loginAs($userSwitch);
+
+        $this->assertTrue(UserSwitch::isSwitch());
+        $this->assertEquals($userSwitch->id, Auth::id());
+
+        UserSwitch::logout();
+
+        $this->assertEquals($user->id, Auth::id());
     }
 }

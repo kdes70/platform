@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Orchid\Screen\Layouts;
 
 use Illuminate\Support\Arr;
+use JsonSerializable;
 use Orchid\Screen\Repository;
 
 /**
  * Class Base.
  */
-abstract class Base
+abstract class Base implements JsonSerializable
 {
     /**
      * Main template to display the layer
@@ -18,15 +19,15 @@ abstract class Base
      *
      * @var string
      */
-    public $template;
+    protected $template;
 
     /**
      * Nested layers that should be
      * displayed along with it.
      *
-     * @var array
+     * @var Base[]
      */
-    public $layouts = [];
+    protected $layouts = [];
 
     /**
      * What screen method should be called
@@ -34,7 +35,7 @@ abstract class Base
      *
      * @var string
      */
-    public $asyncMethod;
+    protected $asyncMethod;
 
     /**
      * The call is asynchronous and should return
@@ -42,24 +43,19 @@ abstract class Base
      *
      * @var bool
      */
-    public $async = false;
+    protected $async = false;
 
     /**
      * The following request must be asynchronous.
      *
      * @var bool
      */
-    public $asyncNext = false;
+    protected $asyncNext = false;
 
     /**
-     * Base constructor.
-     *
-     * @param Base[] $layouts
+     * @var array
      */
-    public function __construct(array $layouts = [])
-    {
-        $this->layouts = $layouts;
-    }
+    protected $variables = [];
 
     /**
      * @param Repository $repository
@@ -82,6 +78,16 @@ abstract class Base
     }
 
     /**
+     * @return Base
+     */
+    public function currentAsync(): self
+    {
+        $this->async = true;
+
+        return $this;
+    }
+
+    /**
      * @param Repository $query
      *
      * @return bool
@@ -98,24 +104,28 @@ abstract class Base
      */
     protected function buildAsDeep(Repository $repository)
     {
-        $build = [];
-
         if (! $this->checkPermission($this, $repository)) {
             return;
         }
 
-        foreach ($this->layouts as $key => $layouts) {
-            $layouts = Arr::wrap($layouts);
+        $build = collect($this->layouts)
+            ->map(function ($layouts) {
+                return Arr::wrap($layouts);
+            })
+            ->map(function (array $layouts, string $key) use ($repository) {
+                return $this->buildChild($layouts, $key, $repository);
+            })
+            ->collapse()
+            ->all();
 
-            $build += $this->buildChild($layouts, $key, $repository);
-        }
-
-        return view($this->async ? 'platform::container.layouts.blank' : $this->template, [
+        $variables = array_merge($this->variables, [
             'manyForms'           => $build,
             'templateSlug'        => $this->getSlug(),
             'templateAsync'       => $this->asyncNext,
             'templateAsyncMethod' => $this->asyncMethod,
         ]);
+
+        return view($this->async ? 'platform::layouts.blank' : $this->template, $variables);
     }
 
     /**
@@ -138,19 +148,18 @@ abstract class Base
      */
     protected function buildChild(array $layouts, $key, Repository $repository)
     {
-        $build = [];
+        return collect($layouts)
+            ->map(function ($layout) {
+                return is_object($layout) ? $layout : app()->make($layout);
+            })
+            ->filter(function (self $layout) use ($repository) {
+                return $this->checkPermission($layout, $repository);
+            })
+            ->reduce(function (array $build, self $layout) use ($key, $repository) {
+                $build[$key][] = $layout->build($repository);
 
-        foreach ($layouts as $layout) {
-            $layout = ! is_object($layout) ? new $layout() : $layout;
-
-            if (! $this->checkPermission($layout, $repository)) {
-                continue;
-            }
-
-            $build[$key][] = $layout->build($repository);
-        }
-
-        return $build;
+                return $build;
+            }, []);
     }
 
     /**
@@ -162,5 +171,42 @@ abstract class Base
     public function getSlug(): string
     {
         return sha1(json_encode($this));
+    }
+
+    /**
+     * @param string $slug
+     *
+     * @return Base|null
+     */
+    public function findBySlug(string $slug)
+    {
+        if ($this->getSlug() === $slug) {
+            return $this;
+        }
+
+        return collect($this->layouts)
+            ->flatten()
+            ->map(static function ($layout) use ($slug) {
+                $layout = is_object($layout)
+                    ? $layout
+                    : app()->make($layout);
+
+                return $layout->findBySlug($slug);
+            })
+            ->filter()
+            ->filter(static function ($layout) use ($slug) {
+                return $layout->getSlug() === $slug;
+            })
+            ->first();
+    }
+
+    /**
+     * @return mixed
+     */
+    public function jsonSerialize()
+    {
+        $props = collect(get_object_vars($this));
+
+        return $props->except(['query'])->toArray();
     }
 }

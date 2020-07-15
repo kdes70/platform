@@ -80,7 +80,7 @@ class Menu
     {
         $arg = get_object_vars($itemMenu);
 
-        if (array_key_exists('show', $arg) && ! $arg['show']) {
+        if (array_key_exists('display', $arg) && ! $arg['display']) {
             return $this;
         }
 
@@ -113,10 +113,16 @@ class Menu
 
         return $this->findAllChildren($location)
             ->sortBy('sort')
-            ->map(function ($value) use ($template) {
-                return view($template, $value)->render();
+            ->filter(function ($value) {
+                if ($value['childs'] && $value['hideEmpty']) {
+                    return $this->showCountElement($value['slug']);
+                }
+
+                return true;
             })
-            ->implode(' ');
+            ->map(static function ($value) use ($template) {
+                return view($template, $value)->render();
+            })->implode(' ');
     }
 
     /**
@@ -126,20 +132,20 @@ class Menu
      */
     public function build(string $location): Collection
     {
-        return $this->findAllChildren($location)->filter(function ($value) {
+        return $this->findAllChildren($location)->filter(static function ($value) {
             return count($value['children']);
         });
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     private function checkAccess()
     {
         $user = Auth::user();
 
         $this->container = $this->container
-            ->filter(function ($item) use ($user) {
+            ->filter(static function ($item) use ($user) {
                 if (! isset($item['arg']['permission'])) {
                     return true;
                 }
@@ -155,7 +161,7 @@ class Menu
      *
      * @return Collection
      */
-    private function findAllChildren($key): Collection
+    private function findAllChildren(string $key): Collection
     {
         return $this->checkAccess()
             ->where('location', $key)
@@ -163,11 +169,11 @@ class Menu
             ->map(function ($item, $key) {
                 $item = $item['arg'];
 
-                $childrens = $this->findAllChildren($key);
+                $children = $this->findAllChildren($key);
 
-                $item['children'] = $childrens;
+                $item['children'] = $children;
 
-                $childrens->each(function ($children) use (&$item) {
+                $children->each(static function ($children) use (&$item) {
                     $item['active'] = array_merge($item['active'], $children['active']);
                 });
 
@@ -184,6 +190,6 @@ class Menu
      */
     public function showCountElement(string $slug): bool
     {
-        return $this->container->where('location', $slug)->count() > 0;
+        return $this->container->where('location', $slug)->isNotEmpty();
     }
 }

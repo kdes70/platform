@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Orchid\Screen\Layouts;
 
+use Illuminate\Contracts\View\Factory;
 use Illuminate\Support\Str;
 use Orchid\Screen\Repository;
 
@@ -13,14 +14,19 @@ use Orchid\Screen\Repository;
 abstract class Chart extends Base
 {
     /**
+     * Main template to display the layer
+     * Represents the view() argument.
+     *
      * @var string
      */
-    public $template = 'platform::container.layouts.chart';
+    protected $template = 'platform::layouts.chart';
 
     /**
+     * Add a title to the Chart.
+     *
      * @var string
      */
-    public $title = 'My Chart';
+    protected $title = 'My Chart';
 
     /**
      * Available options:
@@ -29,29 +35,36 @@ abstract class Chart extends Base
      *
      * @var string
      */
-    public $type = 'line';
+    protected $type = 'line';
 
     /**
      * @var int
      */
-    public $height = 250;
+    protected $height = 250;
 
     /**
+     * Set the labels for each possible field value.
+     *
      * @var array
      */
-    public $labels = [];
+    protected $labels = [];
 
     /**
+     * Data source.
+     *
+     * The name of the key to fetch it from the query.
+     * The results of which will be elements of the chart.
+     *
      * @var string
      */
-    public $data = '';
+    protected $target = '';
 
     /**
      * Colors used.
      *
      * @var array
      */
-    public $colors = [
+    protected $colors = [
         '#2274A5',
         '#F75C03',
         '#F1C40F',
@@ -64,23 +77,85 @@ abstract class Chart extends Base
      *
      * @var bool
      */
-    public $export = true;
+    protected $export = true;
 
     /**
-     * @param \Orchid\Screen\Repository $query
+     * Limiting the slices.
      *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * When there are too many data values to show visually,
+     * it makes sense to bundle up the least of the values as a cumulated data point,
+     * rather than showing tiny slices.
+     *
+     * @var int
      */
-    public function build(Repository $query)
+    protected $maxSlices = 7;
+
+    /**
+     * To display data values over bars or dots in an axis graph.
+     *
+     * @var int
+     */
+    protected $valuesOverPoints = 0;
+
+    /**
+     * Configuring percentage bars.
+     *
+     * @var array
+     */
+    protected $barOptions = [
+        'spaceRatio' => 0.5,
+        'stacked'    => 0,
+        'height'     => 20,
+        'depth'      => 2,
+    ];
+
+    /**
+     * Configuring line.
+     *
+     * @var array
+     */
+    protected $lineOptions = [
+        'regionFill' => 0,
+        'hideDots'   => 0,
+        'hideLine'   => 0,
+        'heatline'   => 0,
+        'dotSize'    => 4,
+    ];
+
+    /**
+     * Configuring axios.
+     *
+     * @var array
+     */
+    protected $axisOptions = [
+        'xIsSeries'  => false,
+        'xAxisMode'  => 'span', //'tick'
+    ];
+
+    /**
+     * @param Repository $repository
+     *
+     * @return Factory|\Illuminate\View\View
+     */
+    public function build(Repository $repository)
     {
+        if (! $this->checkPermission($this, $repository)) {
+            return;
+        }
+
         return view($this->template, [
-            'title'  => $this->title,
-            'slug'   => Str::slug($this->title),
-            'type'   => $this->type,
-            'height' => $this->height,
-            'labels' => json_encode(collect($this->labels)),
-            'data'   => json_encode($query->getContent($this->data)),
-            'colors' => json_encode($this->colors),
+            'title'            => $this->title,
+            'slug'             => Str::slug($this->title),
+            'type'             => $this->type,
+            'height'           => $this->height,
+            'labels'           => json_encode(collect($this->labels)),
+            'data'             => json_encode($repository->getContent($this->target)),
+            'colors'           => json_encode($this->colors),
+            'maxSlices'        => json_encode($this->maxSlices),
+            'valuesOverPoints' => json_encode($this->valuesOverPoints),
+            'axisOptions'      => json_encode($this->axisOptions),
+            'barOptions'       => json_encode($this->barOptions),
+            'lineOptions'      => json_encode($this->lineOptions),
         ]);
     }
 }

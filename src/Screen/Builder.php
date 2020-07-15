@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace Orchid\Screen;
 
-use Illuminate\Support\ViewErrorBag;
-use Orchid\Screen\Contracts\FieldContract;
+use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Orchid\Screen\Contracts\Fieldable;
+use Orchid\Screen\Contracts\Groupable;
+use Throwable;
 
 class Builder
 {
     /**
      * Fields to be reflected, in the form Field.
      *
-     * @var FieldContract[]|mixed
+     * @var Fieldable[]|mixed
      */
     public $fields;
 
     /**
      * Transmitted values for display in a form.
      *
-     * @var \Illuminate\Database\Eloquent\Model|Repository
+     * @var Model|Repository
      */
     public $data;
 
@@ -47,13 +50,13 @@ class Builder
     /**
      * Builder constructor.
      *
-     * @param FieldContract[] $fields
-     * @param Repository      $data
+     * @param Fieldable[] $fields
+     * @param Repository  $data
      */
-    public function __construct(array $fields, $data)
+    public function __construct(array $fields, $data = null)
     {
         $this->fields = $fields;
-        $this->data = $data;
+        $this->data = $data ?? new Repository();
     }
 
     /**
@@ -83,42 +86,37 @@ class Builder
     /**
      * Generate a ready-made html form for display to the user.
      *
-     * @throws \Throwable
+     * @throws Throwable
      *
      * @return string
      */
     public function generateForm(): string
     {
-        foreach ($this->fields as $field) {
-            if (is_array($field)) {
-                $this->renderGroup($field);
-                continue;
-            }
-
-            $this->form .= $this->render($field);
-        }
+        collect($this->fields)->each(function (Field $field) {
+            $this->form .= is_subclass_of($field, Groupable::class)
+                ? $this->renderGroup($field)
+                : $this->render($field);
+        });
 
         return $this->form;
     }
 
     /**
-     * @param Field[] $groupField
+     * @param Groupable $group
      *
      * @throws \Throwable
+     *
+     * @return array|string
      */
-    private function renderGroup($groupField)
+    private function renderGroup(Groupable $group)
     {
-        $group = [];
+        $prepare = collect($group->getGroup())->map(function ($field) {
+            return $this->render($field);
+        })
+            ->filter()
+            ->toArray();
 
-        foreach ($groupField as $field) {
-            $group[] = $this->render($field);
-        }
-
-        $this->form .= view('platform::partials.fields.groups', [
-            'cols' => array_filter($group),
-        ])
-            ->withErrors(session()->get('errors', app(ViewErrorBag::class)))
-            ->render();
+        return $group->setGroup($prepare)->render();
     }
 
     /**
@@ -126,7 +124,7 @@ class Builder
      *
      * @param Field $field
      *
-     * @throws \Throwable
+     * @throws Throwable
      *
      * @return mixed
      */
@@ -149,52 +147,27 @@ class Builder
      */
     private function buildPrefix(Field $field)
     {
-        $prefix = $field->get('prefix');
-
-        if (! is_null($prefix)) {
-            foreach (array_filter(explode(' ', $prefix)) as $name) {
-                $prefix .= '['.$name.']';
-            }
-
-            return $prefix;
-        }
-
-        return $this->prefix;
+        return $field->get('prefix', $this->prefix);
     }
 
     /**
      * @param array $attributes
      *
-     * @return mixed
+     * @return array
      */
-    private function fill(array $attributes)
+    private function fill(array $attributes): array
     {
-        $name = array_filter(explode(' ', $attributes['name']));
-        $name = array_shift($name);
+        $name = $attributes['name'];
 
-        $bindValueName = $name;
-        if (substr($name, -1) === '.') {
-            $bindValueName = substr($bindValueName, 0, -1);
-        }
-
+        $bindValueName = rtrim($name, '.');
         $attributes['value'] = $this->getValue($bindValueName, $attributes['value'] ?? null);
 
-        $binding = explode('.', $name);
-
-        $attributes['name'] = '';
-        foreach ($binding as $key => $bind) {
-            if (! is_null($attributes['prefix'])) {
-                $attributes['name'] .= '['.$bind.']';
-                continue;
-            }
-
-            if ($key === 0) {
-                $attributes['name'] .= $bind;
-                continue;
-            }
-
-            $attributes['name'] .= '['.$bind.']';
+        //set prefix
+        if ($attributes['prefix'] !== null) {
+            $name = '.'.$name;
         }
+
+        $attributes['name'] = self::convertDotToArray($name);
 
         return $attributes;
     }
@@ -209,25 +182,42 @@ class Builder
      */
     private function getValue(string $key, $value = null)
     {
-        if (! is_null($this->language)) {
+        if ($this->language !== null) {
             $key = $this->language.'.'.$key;
         }
 
-        if (! is_null($this->prefix)) {
+        if ($this->prefix !== null) {
             $key = $this->prefix.'.'.$key;
         }
 
         $data = $this->data->getContent($key);
 
         // default value
-        if (is_null($data)) {
+        if ($data === null) {
             return $value;
         }
 
-        if ($value instanceof \Closure) {
+        if ($value instanceof Closure) {
             return $value($data, $this->data);
         }
 
         return $data;
+    }
+
+    /**
+     * @param string $string
+     *
+     * @return string
+     */
+    public static function convertDotToArray(string $string): string
+    {
+        $name = '';
+        $binding = explode('.', $string);
+
+        foreach ($binding as $key => $bind) {
+            $name .= $key === 0 ? $bind : '['.$bind.']';
+        }
+
+        return $name;
     }
 }

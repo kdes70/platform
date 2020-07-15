@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace Orchid\Platform;
 
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Macroable;
+use Orchid\Access\TwoFactor;
 
 class Dashboard
 {
+    use Macroable, TwoFactor;
+
     /**
      * ORCHID Version.
      */
-    public const VERSION = '4.6.1';
+    public const VERSION = '7.13.0';
 
     /**
      * The Dashboard configuration options.
@@ -44,12 +48,7 @@ class Dashboard
     /**
      * @var Collection
      */
-    private $entities;
-
-    /**
-     * @var Collection
-     */
-    private $globalSearch;
+    private $search;
 
     /**
      * @var Collection
@@ -67,8 +66,7 @@ class Dashboard
             'removed' => collect(),
         ]);
         $this->resources = collect();
-        $this->entities = collect();
-        $this->globalSearch = collect();
+        $this->search = collect();
         $this->publicDirectories = collect();
     }
 
@@ -138,16 +136,18 @@ class Dashboard
      * Get the class name for a given Dashboard model.
      *
      * @param string      $key
-     * @param null|string $default
+     * @param string|null $default
      *
      * @return string
      */
-    public static function model(string $key, string $default = null)
+    public static function model(string $key, string $default = null): string
     {
         return Arr::get(static::$options, 'models.'.$key, $default ?? $key);
     }
 
     /**
+     * Get the user model class name.
+     *
      * @param string $key
      * @param string $custom
      */
@@ -167,6 +167,22 @@ class Dashboard
     }
 
     /**
+     * The real path to the package files.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public static function path(string $path = ''): string
+    {
+        $current = dirname(__DIR__, 2);
+
+        return realpath($current.($path ? DIRECTORY_SEPARATOR.$path : $path));
+    }
+
+    /**
+     * Registers a ItemPermission that defines authentication permissions.
+     *
      * @param ItemPermission $permission
      *
      * @return $this
@@ -187,25 +203,15 @@ class Dashboard
     }
 
     /**
-     * @param array $value
+     * Registers a set of models for which full-text search is required.
+     *
+     * @param array $model
      *
      * @return $this
      */
-    public function registerEntities(array $value): self
+    public function registerSearch(array $model): self
     {
-        $this->entities = $this->entities->merge($value);
-
-        return $this;
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model[] $value
-     *
-     * @return $this
-     */
-    public function registerGlobalSearch(array $value): self
-    {
-        $this->globalSearch = $this->globalSearch->merge($value);
+        $this->search = $this->search->merge($model);
 
         return $this;
     }
@@ -230,7 +236,7 @@ class Dashboard
      *
      * @param null $key
      *
-     * @return array|\Illuminate\Support\Collection|mixed
+     * @return array|Collection|mixed
      */
     public function getResource($key = null)
     {
@@ -244,20 +250,10 @@ class Dashboard
     /**
      * @return Collection
      */
-    public function getEntities(): Collection
+    public function getSearch(): Collection
     {
-        return $this->entities->transform(function ($value) {
-            return is_object($value) ? $value : new $value();
-        });
-    }
-
-    /**
-     * @return Collection
-     */
-    public function getGlobalSearch(): Collection
-    {
-        return $this->globalSearch->transform(function ($value) {
-            return is_object($value) ? $value : new $value();
+        return $this->search->transform(static function ($model) {
+            return is_object($model) ? $model : app()->make($model);
         });
     }
 
@@ -270,7 +266,7 @@ class Dashboard
     }
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     public function getPermission(): Collection
     {
@@ -281,10 +277,10 @@ class Dashboard
             return $all;
         }
 
-        return $all->map(function ($group) use ($removed) {
+        return $all->map(static function ($group) use ($removed) {
             foreach ($group[key($group)] as $key => $item) {
-                if ($removed->contains($item['slug'])) {
-                    unset($group[key($group)][$key]);
+                if ($removed->contains($item)) {
+                    unset($group[key($group)]);
                 }
             }
 
@@ -297,7 +293,7 @@ class Dashboard
      *
      * @return $this
      */
-    public function removePermission(string $key) : self
+    public function removePermission(string $key): self
     {
         $this->permission->get('removed')->push($key);
 
@@ -310,7 +306,7 @@ class Dashboard
      *
      * @return Dashboard
      */
-    public function addPublicDirectory(string $package, string $path) : self
+    public function addPublicDirectory(string $package, string $path): self
     {
         $this->publicDirectories->put($package, $path);
 
@@ -320,7 +316,7 @@ class Dashboard
     /**
      * @return Collection
      */
-    public function getPublicDirectory() : Collection
+    public function getPublicDirectory(): Collection
     {
         return $this->publicDirectories;
     }

@@ -1,4 +1,4 @@
-@extends('platform::layouts.auth')
+@extends('platform::auth')
 @section('title',__('Reset Password'))
 
 @section('content')
@@ -10,48 +10,34 @@
           data-action="layouts--form#submit"
           data-layouts--form-button-animate="#button-reset"
           data-layouts--form-button-text="{{ __('Loading...') }}"
-          action="{{ route('platform.password.email') }}">
+          action="{{ route('platform.password.update') }}">
         @csrf
-        <div class="form-group {{ $errors->has('email') ? ' is-invalid' : '' }}">
+        <input type="hidden" name="token" value="{{ $token }}">
+        <div class="form-group">
             <label>{{ __('E-Mail Address') }}</label>
-            <div class="controls">
-                <input type="email" name="email" placeholder="{{ __('Enter your email') }}"
-                       class="form-control" required
-                       value="{{ old('email') }}">
-                @if ($errors->has('email'))
-                    <span class="invalid-feedback text-danger">
-                        {{ $errors->first('email') }}
-                    </span>
-                @endif
-            </div>
+            {!!  \Orchid\Screen\Fields\Input::make('email')
+                ->type('email')
+                ->required()
+                ->placeholder(__('Enter your email'))
+            !!}
         </div>
-        <div class="form-group {{ $errors->has('password') ? ' is-invalid' : '' }}">
+        <div class="form-group">
             <label>{{ __('Password') }}</label>
-            <div class="controls">
-                <input type="password" name="password" placeholder="{{ __('Password') }}"
-                       class="form-control" required>
-                @if ($errors->has('Password'))
-                    <span class="invalid-feedback text-danger">
-                       {{ $errors->first('Password') }}
-                    </span>
-                @endif
-            </div>
+            {!!  \Orchid\Screen\Fields\Password::make('password')
+                ->required()
+                ->placeholder(__('Enter your password'))
+            !!}
         </div>
-        <div class="form-group {{ $errors->has('password_confirmation') ? ' is-invalid' : '' }}">
+        <div class="form-group">
             <label>{{ __('Confirm Password') }}</label>
-            <div class="controls">
-                <input type="password" name="password_confirmation" placeholder="{{ __('Confirm Password') }}"
-                       class="form-control" required>
-                @if ($errors->has('password_confirmation'))
-                    <span class="invalid-feedback text-danger">
-                       {{ $errors->first('password_confirmation') }}
-                    </span>
-                @endif
-            </div>
+            {!!  \Orchid\Screen\Fields\Password::make('password_confirmation')
+                ->required()
+                ->placeholder(__('Enter your password'))
+            !!}
         </div>
         <div class="form-group">
             <button class="btn btn-default btn-block" id="button-reset" type="submit">
-                <i class="icon-refresh text-xs m-r-xs"></i>  {{ __('Reset Password') }}
+                <i class="icon-refresh text-xs mr-2"></i> {{ __('Reset Password') }}
             </button>
         </div>
     </form>

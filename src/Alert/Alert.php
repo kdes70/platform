@@ -4,22 +4,35 @@ declare(strict_types=1);
 
 namespace Orchid\Alert;
 
+use Illuminate\Session\Store;
+use Orchid\Support\Color;
+
 /**
  * Class Alert.
  */
 class Alert
 {
     /**
-     * @var SessionStoreInterface
+     * @var string
      */
-    private $session;
+    public const SESSION_MESSAGE = 'flash_notification.message';
+
+    /**
+     * @var string
+     */
+    public const SESSION_LEVEL = 'flash_notification.level';
+
+    /**
+     * @var Store
+     */
+    protected $session;
 
     /**
      * Create a new flash notifier instance.
      *
-     * @param SessionStoreInterface $session
+     * @param Store $session
      */
-    public function __construct(SessionStoreInterface $session)
+    public function __construct(Store $session)
     {
         $this->session = $session;
     }
@@ -31,7 +44,7 @@ class Alert
      *
      * @return Alert
      */
-    public function info($message): self
+    public function info(string $message): self
     {
         $this->message($message);
 
@@ -42,14 +55,16 @@ class Alert
      * Flash a general message.
      *
      * @param string $message
-     * @param string $level
+     * @param Color  $level
      *
      * @return Alert
      */
-    public function message($message, $level = 'info'): self
+    public function message(string $message, Color $level = null): self
     {
-        $this->session->flash('flash_notification.message', $message);
-        $this->session->flash('flash_notification.level', $level);
+        $level = $level ?? Color::INFO();
+
+        $this->session->flash(static::SESSION_MESSAGE, $message);
+        $this->session->flash(static::SESSION_LEVEL, (string) $level);
 
         return $this;
     }
@@ -61,9 +76,9 @@ class Alert
      *
      * @return Alert
      */
-    public function success($message): self
+    public function success(string $message): self
     {
-        $this->message($message, 'success');
+        $this->message($message, Color::SUCCESS());
 
         return $this;
     }
@@ -75,9 +90,9 @@ class Alert
      *
      * @return Alert
      */
-    public function error($message): self
+    public function error(string $message): self
     {
-        $this->message($message, 'danger');
+        $this->message($message, Color::ERROR());
 
         return $this;
     }
@@ -89,10 +104,40 @@ class Alert
      *
      * @return Alert
      */
-    public function warning($message): self
+    public function warning(string $message): self
     {
-        $this->message($message, 'warning');
+        $this->message($message, Color::WARNING());
 
         return $this;
+    }
+
+    /**
+     * Flash a view message.
+     *
+     * @param string $template
+     * @param Color  $level
+     * @param array  $data
+     *
+     * @throws \Throwable
+     *
+     * @return Alert
+     */
+    public function view(string $template, Color $level = null, array $data = []): self
+    {
+        $message = view($template, $data)->render();
+
+        $this->message($message, $level ?? Color::INFO());
+
+        return $this;
+    }
+
+    /**
+     * Checks if a message has been set before.
+     *
+     * @return bool
+     */
+    public function check(): bool
+    {
+        return $this->session->has(static::SESSION_MESSAGE);
     }
 }

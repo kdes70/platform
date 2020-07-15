@@ -19,13 +19,9 @@ export default class extends Flatpickr {
     }
 
     /**
-     *
-     * @param selectedDates
-     * @param dateStr
-     * @param instance
-     * @returns {*}
+     * Clear input time
      */
-    change(selectedDates, dateStr, instance) {
-        return dateStr;
+    clear() {
+        this.fp.clear();
     }
 }

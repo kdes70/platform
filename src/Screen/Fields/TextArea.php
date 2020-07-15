@@ -9,36 +9,37 @@ use Orchid\Screen\Field;
 /**
  * Class TextArea.
  *
- * @method self accesskey($value = true)
- * @method self autofocus($value = true)
- * @method self cols($value = true)
- * @method self disabled($value = true)
- * @method self form($value = true)
- * @method self maxlength(int $value)
- * @method self name(string $value)
- * @method self placeholder(string $value = null)
- * @method self readonly($value = true)
- * @method self required(bool $value = true)
- * @method self rows(int $value)
- * @method self tabindex($value = true)
- * @method self wrap($value = true)
- * @method self help(string $value = null)
- * @method self max(int $value)
- * @method self popover(string $value = null)
+ * @method TextArea accesskey($value = true)
+ * @method TextArea autofocus($value = true)
+ * @method TextArea cols($value = true)
+ * @method TextArea disabled($value = true)
+ * @method TextArea form($value = true)
+ * @method TextArea maxlength(int $value)
+ * @method TextArea name(string $value = null)
+ * @method TextArea placeholder(string $value = null)
+ * @method TextArea readonly($value = true)
+ * @method TextArea required(bool $value = true)
+ * @method TextArea rows(int $value)
+ * @method TextArea tabindex($value = true)
+ * @method TextArea wrap($value = true)
+ * @method TextArea help(string $value = null)
+ * @method TextArea max(int $value)
+ * @method TextArea popover(string $value = null)
+ * @method TextArea title(string $value = null)
  */
 class TextArea extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.textarea';
+    protected $view = 'platform::fields.textarea';
 
     /**
      * Default attributes value.
      *
      * @var array
      */
-    public $attributes = [
+    protected $attributes = [
         'class' => 'form-control no-resize',
         'value' => null,
     ];
@@ -48,7 +49,7 @@ class TextArea extends Field
      *
      * @var array
      */
-    public $inlineAttributes = [
+    protected $inlineAttributes = [
         'accesskey',
         'autofocus',
         'cols',

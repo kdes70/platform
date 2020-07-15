@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Orchid\Screen\Layouts;
 
+use Illuminate\Contracts\View\Factory;
 use Orchid\Filters\Filter;
 use Orchid\Screen\Repository;
 
@@ -13,17 +14,31 @@ use Orchid\Screen\Repository;
 abstract class Selection extends Base
 {
     /**
-     * @var string
+     * Drop down filters.
      */
-    public $template = 'platform::container.layouts.selection';
+    public const TEMPLATE_DROP_DOWN = 'platform::layouts.selection';
 
     /**
-     * @param Repository $query
-     *
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View|mixed
+     * Line filters.
      */
-    public function build(Repository $query)
+    public const TEMPLATE_LINE = 'platform::layouts.filter';
+
+    /**
+     * @var string
+     */
+    public $template = self::TEMPLATE_DROP_DOWN;
+
+    /**
+     * @param Repository $repository
+     *
+     * @return Factory|\Illuminate\View\View|mixed
+     */
+    public function build(Repository $repository)
     {
+        if (! $this->checkPermission($this, $repository)) {
+            return;
+        }
+
         $filters = collect($this->filters());
         $count = $filters->count();
 
@@ -31,9 +46,9 @@ abstract class Selection extends Base
             return;
         }
 
-        foreach ($filters as $key => $filter) {
-            $filters[$key] = new $filter();
-        }
+        $filters = $filters->map(static function ($filter) {
+            return app()->make($filter);
+        });
 
         return view($this->template, [
             'filters' => $filters,

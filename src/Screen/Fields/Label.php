@@ -9,22 +9,33 @@ use Orchid\Screen\Field;
 /**
  * Class Label.
  *
- * @method self name(string $value)
- * @method self popover(string $value = null)
+ * @method Label name(string $value = null)
+ * @method Label popover(string $value = null)
+ * @method Label title(string $value = null)
  */
 class Label extends Field
 {
     /**
      * @var string
      */
-    public $view = 'platform::fields.label';
+    protected $view = 'platform::fields.label';
 
-    public $attributes = [
+    /**
+     * Default attributes value.
+     *
+     * @var array
+     */
+    protected $attributes = [
         'id'    => null,
         'value' => null,
     ];
 
-    public $inlineAttributes = [
+    /**
+     * Attributes available for a particular tag.
+     *
+     * @var array
+     */
+    protected $inlineAttributes = [
         'class',
     ];
 

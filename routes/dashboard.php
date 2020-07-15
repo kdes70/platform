@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Orchid\Platform\Http\Screens\AnnouncementScreen;
 use Orchid\Platform\Http\Controllers\Systems\IndexController;
-use Orchid\Platform\Http\Controllers\Systems\SearchController;
+use Orchid\Platform\Http\Screens\NotificationScreen;
+use Orchid\Platform\Http\Screens\SearchScreen;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +19,8 @@ use Orchid\Platform\Http\Controllers\Systems\SearchController;
 $this->router->get('/', [IndexController::class, 'index'])->name('index');
 $this->router->fallback([IndexController::class, 'fallback']);
 
-$this->router->post('/search/{query}', [SearchController::class, 'index'])->name('search');
+$this->router->screen('search/{query}', SearchScreen::class)->name('search');
+$this->router->screen('notifications/{id?}', NotificationScreen::class)->name('notifications');
 
-$this->router->screen('/announcement', AnnouncementScreen::class)->name('systems.announcement');
+$this->router->post('/api/notifications', [NotificationScreen::class, 'unreadNotification'])
+    ->name('api.notifications');
